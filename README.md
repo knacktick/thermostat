@@ -277,12 +277,11 @@ The thermostat implements a PID control loop for each of the TEC channels, more 
 
 ## Fan control
 
-Fan control is available for the thermostat revisions with integrated fan system. For this purpose four commands are available:
+Fan control commands are available for thermostat revisions with an integrated fan system:
 1. `fan` - show fan stats: `fan_pwm`, `abs_max_tec_i`, `auto_mode`, `k_a`, `k_b`, `k_c`.
-2. `fan auto` - enable auto speed controller mode, which correlates with fan curve `fcurve`.
-3. `fan <value>` - set the fan power with the value from `1` to `100` and disable auto mode. There is no way to disable the fan.
+2. `fan auto` - enable auto speed controller mode, where fan speed is controlled by the fan curve `fcurve`.
+3. `fan <value>` - set the fan power with the value from `1` to `100` and disable auto mode. There is no way to completely disable the fan.
 Please note that power doesn't correlate with the actual speed linearly.
-4. `fcurve <a> <b> <c>` - set coefficients of the controlling curve `a*x^2 + b*x + c`, where `x` is `abs_max_tec_i/MAX_TEC_I`, 
-i.e. receives values from 0 to 1 linearly tied to the maximum current. The controlling curve should produce values from 0 to 1,
-as below and beyond values would be substituted by 0 and 1 respectively.
-5. `fcurve default` - restore fan curve settings to defaults: `a = 1.0, b = 0.0, c = 0.0`.
+4. `fcurve <a> <b> <c>` - set coefficients of the controlling curve `a*x^2 + b*x + c`, where `x` is `abs_max_tec_i/MAX_TEC_I`, a normalized value in range [0,1],
+i.e. the (linear) proportion of current output capacity used, on the channel with the largest current flow. The controlling curve is also clamped to [0,1].
+5. `fcurve default` - restore fan curve coefficients to defaults: `a = 1.0, b = 0.0, c = 0.0`.
