@@ -1,4 +1,4 @@
-use core::{cmp::max_by, marker::PhantomData};
+use core::marker::PhantomData;
 use heapless::{consts::U2, Vec};
 use num_traits::Zero;
 use serde::{Serialize, Serializer};
@@ -561,9 +561,10 @@ impl Channels {
     }
 
     pub fn current_abs_max_tec_i(&mut self) -> ElectricCurrent {
-        max_by(self.get_tec_i(0).abs(),
-               self.get_tec_i(1).abs(),
-               |a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal))
+        (0..CHANNELS)
+            .map(|channel| self.get_tec_i(channel).abs())
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal))
+            .unwrap()
     }
 }
 
