@@ -111,8 +111,8 @@ formatted as line-delimited JSON.
 | `pid <0/1> kd <value>`                    | Set differential gain                                                         |
 | `pid <0/1> output_min <amp>`              | Set mininum output                                                            |
 | `pid <0/1> output_max <amp>`              | Set maximum output                                                            |
-| `s-h`                                     | Show Steinhart-Hart equation parameters                                       |
-| `s-h <0/1> <t0/b/r0> <value>`             | Set Steinhart-Hart parameter for a channel                                    |
+| `b-p`                                     | Show B-Parameter equation parameters                                          |
+| `b-p <0/1> <t0/b/r0> <value>`             | Set B-Parameter for a channel                                                 |
 | `postfilter`                              | Show postfilter settings                                                      |
 | `postfilter <0/1> off`                    | Disable postfilter                                                            |
 | `postfilter <0/1> rate <rate>`            | Set postfilter output data rate                                               |
@@ -144,22 +144,22 @@ output will be truncated when USB buffers are full.
 
 Connect the thermistor with the SENS pins of the
 device. Temperature-depending resistance is measured by the AD7172
-ADC. To prepare conversion to a temperature, set the Beta parameters
-for the Steinhart-Hart equation.
+ADC. To prepare conversion to a temperature, set the parameters
+for the B-Parameter equation.
 
 Set the base temperature in degrees celsius for the channel 0 thermistor:
 ```
-s-h 0 t0 20
+b-p 0 t0 20
 ```
 
 Set the resistance in Ohms measured at the base temperature t0:
 ```
-s-h 0 r0 10000
+b-p 0 r0 10000
 ```
 
 Set the Beta parameter:
 ```
-s-h 0 b 3800
+b-p 0 b 3800
 ```
 
 ### 50/60 Hz filtering
@@ -260,7 +260,7 @@ with the following keys.
 | `interval`     | Seconds         | Time elapsed since last report update on channel     |
 | `adc`          | Volts           | AD7172 input                                         |
 | `sens`         | Ohms            | Thermistor resistance derived from `adc`             |
-| `temperature`  | Degrees Celsius | Steinhart-Hart conversion result derived from `sens` |
+| `temperature`  | Degrees Celsius | B-Parameter conversion result derived from `sens`    |
 | `pid_engaged`  | Boolean         | `true` if in closed-loop mode                        |
 | `i_set`        | Amperes         | TEC output current                                   |
 | `dac_value`    | Volts           | AD5680 output derived from `i_set`                   |

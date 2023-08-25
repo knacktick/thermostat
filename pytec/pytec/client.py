@@ -92,14 +92,14 @@ class Client:
         """
         return self._get_conf("pid")
 
-    def get_steinhart_hart(self):
-        """Retrieve Steinhart-Hart parameters for resistance to temperature conversion
+    def get_b_parameter(self):
+        """Retrieve B-Parameter equation parameters for resistance to temperature conversion
 
         Example::
             [{'params': {'b': 3800.0, 'r0': 10000.0, 't0': 298.15}, 'channel': 0},
              {'params': {'b': 3800.0, 'r0': 10000.0, 't0': 298.15}, 'channel': 1}]
         """
-        return self._get_conf("s-h")
+        return self._get_conf("b-p")
 
     def get_postfilter(self):
         """Retrieve DAC postfilter configuration
@@ -146,7 +146,7 @@ class Client:
         Examples::
             tec.set_param("output", 0, "max_v", 2.0)
             tec.set_param("pid", 1, "output_max", 2.5)
-            tec.set_param("s-h", 0, "t0", 20.0)
+            tec.set_param("b-p", 0, "t0", 20.0)
             tec.set_param("center", 0, "vref")
             tec.set_param("postfilter", 1, 21)
 

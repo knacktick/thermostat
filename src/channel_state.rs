@@ -1,8 +1,8 @@
 use crate::{
-    ad7172,
+    ad7172, b_parameter as bp,
     command_parser::{CenterPoint, Polarity},
     config::PwmLimits,
-    pid, steinhart_hart as sh,
+    pid,
 };
 use num_traits::Zero;
 use smoltcp::time::{Duration, Instant};
@@ -32,7 +32,7 @@ pub struct ChannelState {
     pub pwm_limits: PwmLimits,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
-    pub sh: sh::Parameters,
+    pub bp: bp::Parameters,
     pub polarity: Polarity,
 }
 
@@ -54,7 +54,7 @@ impl ChannelState {
             },
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
-            sh: sh::Parameters::default(),
+            bp: bp::Parameters::default(),
             polarity: Polarity::Normal,
         }
     }
@@ -100,7 +100,7 @@ impl ChannelState {
 
     pub fn get_temperature(&self) -> Option<ThermodynamicTemperature> {
         let r = self.get_sens()?;
-        let temperature = self.sh.get_temperature(r);
+        let temperature = self.bp.get_temperature(r);
         Some(temperature)
     }
 }

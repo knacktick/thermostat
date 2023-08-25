@@ -1,8 +1,9 @@
 use crate::{
     ad7172::PostFilter,
+    b_parameter,
     channels::Channels,
     command_parser::{CenterPoint, Polarity},
-    pid, steinhart_hart,
+    pid,
 };
 use num_traits::Zero;
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,7 @@ pub struct ChannelConfig {
     pid_engaged: bool,
     i_set: ElectricCurrent,
     polarity: Polarity,
-    sh: steinhart_hart::Parameters,
+    bp: b_parameter::Parameters,
     pwm: PwmLimits,
     /// uses variant `PostFilter::Invalid` instead of `None` to save space
     adc_postfilter: PostFilter,
@@ -45,7 +46,7 @@ impl ChannelConfig {
             pid_engaged: state.pid_engaged,
             i_set,
             polarity: state.polarity.clone(),
-            sh: state.sh.clone(),
+            bp: state.bp.clone(),
             pwm,
             adc_postfilter,
         }
@@ -57,7 +58,7 @@ impl ChannelConfig {
         state.pid.parameters = self.pid.clone();
         state.pid.target = self.pid_target.into();
         state.pid_engaged = self.pid_engaged;
-        state.sh = self.sh.clone();
+        state.bp = self.bp.clone();
 
         self.pwm.apply(channels, channel);
 

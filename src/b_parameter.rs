@@ -8,14 +8,14 @@ use uom::si::{
     thermodynamic_temperature::{degree_celsius, kelvin},
 };
 
-/// Steinhart-Hart equation parameters
+/// B-Parameter equation parameters
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
     /// Base temperature
     pub t0: ThermodynamicTemperature,
-    /// Resistance at base temperature
+    /// Thermistor resistance at base temperature
     pub r0: ElectricalResistance,
-    /// Beta
+    /// Beta (average slope of the function ln R vs. 1/T)
     pub b: TemperatureInterval,
 }
 

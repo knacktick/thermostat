@@ -2,7 +2,7 @@ use super::{
     ad7172,
     channels::{Channels, CHANNELS},
     command_parser::{
-        CenterPoint, Command, Ipv4Config, PidParameter, Polarity, PwmPin, ShParameter, ShowCommand,
+        BpParameter, CenterPoint, Command, Ipv4Config, PidParameter, Polarity, PwmPin, ShowCommand,
     },
     config::ChannelConfig,
     dfu,
@@ -113,16 +113,13 @@ impl Handler {
         Ok(Handler::Handled)
     }
 
-    fn show_steinhart_hart(
-        socket: &mut TcpSocket,
-        channels: &mut Channels,
-    ) -> Result<Handler, Error> {
-        match channels.steinhart_hart_summaries_json() {
+    fn show_b_parameter(socket: &mut TcpSocket, channels: &mut Channels) -> Result<Handler, Error> {
+        match channels.b_parameter_summaries_json() {
             Ok(buf) => {
                 send_line(socket, &buf);
             }
             Err(e) => {
-                error!("unable to serialize steinhart-hart summaries: {:?}", e);
+                error!("unable to serialize b parameter summaries: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
                 return Err(Error::Report);
             }
@@ -241,19 +238,19 @@ impl Handler {
         Ok(Handler::Handled)
     }
 
-    fn set_steinhart_hart(
+    fn set_b_parameter(
         socket: &mut TcpSocket,
         channels: &mut Channels,
         channel: usize,
-        parameter: ShParameter,
+        parameter: BpParameter,
         value: f64,
     ) -> Result<Handler, Error> {
-        let sh = &mut channels.channel_state(channel).sh;
-        use super::command_parser::ShParameter::*;
+        let bp = &mut channels.channel_state(channel).bp;
+        use super::command_parser::BpParameter::*;
         match parameter {
-            T0 => sh.t0 = ThermodynamicTemperature::new::<degree_celsius>(value),
-            B => sh.b = TemperatureInterval::new::<kelvin>(value),
-            R0 => sh.r0 = ElectricalResistance::new::<ohm>(value),
+            T0 => bp.t0 = ThermodynamicTemperature::new::<degree_celsius>(value),
+            B => bp.b = TemperatureInterval::new::<kelvin>(value),
+            R0 => bp.r0 = ElectricalResistance::new::<ohm>(value),
         }
         send_line(socket, b"{}");
         Ok(Handler::Handled)
@@ -480,9 +477,7 @@ impl Handler {
             Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),
             Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),
             Command::Show(ShowCommand::Output) => Handler::show_pwm(socket, channels),
-            Command::Show(ShowCommand::SteinhartHart) => {
-                Handler::show_steinhart_hart(socket, channels)
-            }
+            Command::Show(ShowCommand::BParameter) => Handler::show_b_parameter(socket, channels),
             Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
             Command::OutputPid { channel } => Handler::engage_pid(socket, channels, channel),
@@ -502,11 +497,11 @@ impl Handler {
                 parameter,
                 value,
             } => Handler::set_pid(socket, channels, channel, parameter, value),
-            Command::SteinhartHart {
+            Command::BParameter {
                 channel,
                 parameter,
                 value,
-            } => Handler::set_steinhart_hart(socket, channels, channel, parameter, value),
+            } => Handler::set_b_parameter(socket, channels, channel, parameter, value),
             Command::PostFilter {
                 channel,
                 rate: None,

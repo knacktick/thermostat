@@ -93,7 +93,7 @@ pub enum ShowCommand {
     Input,
     Output,
     Pid,
-    SteinhartHart,
+    BParameter,
     PostFilter,
     Ipv4,
 }
@@ -108,9 +108,9 @@ pub enum PidParameter {
     OutputMax,
 }
 
-/// Steinhart-Hart equation parameter
+/// B-Parameter equation parameter
 #[derive(Debug, Clone, PartialEq)]
-pub enum ShParameter {
+pub enum BpParameter {
     T0,
     B,
     R0,
@@ -172,9 +172,9 @@ pub enum Command {
         parameter: PidParameter,
         value: f64,
     },
-    SteinhartHart {
+    BParameter {
         channel: usize,
-        parameter: ShParameter,
+        parameter: BpParameter,
         value: f64,
     },
     PostFilter {
@@ -366,18 +366,18 @@ fn pid(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
-/// `s-h <0-1> <parameter> <value>`
-fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+/// `b-p <0-1> <parameter> <value>`
+fn b_parameter_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
     let (input, parameter) = alt((
-        value(ShParameter::T0, tag("t0")),
-        value(ShParameter::B, tag("b")),
-        value(ShParameter::R0, tag("r0")),
+        value(BpParameter::T0, tag("t0")),
+        value(BpParameter::B, tag("b")),
+        value(BpParameter::R0, tag("r0")),
     ))(input)?;
     let (input, _) = whitespace(input)?;
     let (input, value) = float(input)?;
-    let result = value.map(|value| Command::SteinhartHart {
+    let result = value.map(|value| Command::BParameter {
         channel,
         parameter,
         value,
@@ -385,12 +385,12 @@ fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Erro
     Ok((input, result))
 }
 
-/// `s-h` | `s-h <steinhart_hart_parameter>`
-fn steinhart_hart(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-    let (input, _) = tag("s-h")(input)?;
+/// `b-p` | `b-p <b_parameter_parameter>`
+fn b_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("b-p")(input)?;
     alt((
-        preceded(whitespace, steinhart_hart_parameter),
-        value(Ok(Command::Show(ShowCommand::SteinhartHart)), end),
+        preceded(whitespace, b_parameter_parameter),
+        value(Ok(Command::Show(ShowCommand::BParameter)), end),
     ))(input)
 }
 
@@ -572,7 +572,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
         output,
         center_point,
         pid,
-        steinhart_hart,
+        b_parameter,
         postfilter,
         value(Ok(Command::Dfu), tag("dfu")),
         fan,
@@ -753,19 +753,19 @@ mod test {
     }
 
     #[test]
-    fn parse_steinhart_hart() {
-        let command = Command::parse(b"s-h");
-        assert_eq!(command, Ok(Command::Show(ShowCommand::SteinhartHart)));
+    fn parse_b_parameter() {
+        let command = Command::parse(b"b-p");
+        assert_eq!(command, Ok(Command::Show(ShowCommand::BParameter)));
     }
 
     #[test]
-    fn parse_steinhart_hart_set() {
-        let command = Command::parse(b"s-h 1 t0 23.05");
+    fn parse_b_parameter_set() {
+        let command = Command::parse(b"b-p 1 t0 23.05");
         assert_eq!(
             command,
-            Ok(Command::SteinhartHart {
+            Ok(Command::BParameter {
                 channel: 1,
-                parameter: ShParameter::T0,
+                parameter: BpParameter::T0,
                 value: 23.05,
             })
         );

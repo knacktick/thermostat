@@ -1,12 +1,11 @@
 use crate::timer::sleep;
 use crate::{
-    ad5680, ad7172,
+    ad5680, ad7172, b_parameter,
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
     command_handler::JsonBuffer,
     command_parser::{CenterPoint, Polarity, PwmPin},
     pins::{self, Channel0VRef, Channel1VRef},
-    steinhart_hart,
 };
 use core::marker::PhantomData;
 use heapless::{consts::U2, Vec};
@@ -558,17 +557,17 @@ impl Channels {
         serde_json_core::to_vec(&summaries)
     }
 
-    fn steinhart_hart_summary(&mut self, channel: usize) -> SteinhartHartSummary {
-        let params = self.channel_state(channel).sh.clone();
-        SteinhartHartSummary { channel, params }
+    fn b_parameter_summary(&mut self, channel: usize) -> BParameterSummary {
+        let params = self.channel_state(channel).bp.clone();
+        BParameterSummary { channel, params }
     }
 
-    pub fn steinhart_hart_summaries_json(
+    pub fn b_parameter_summaries_json(
         &mut self,
     ) -> Result<JsonBuffer, serde_json_core::ser::Error> {
         let mut summaries = Vec::<_, U2>::new();
         for channel in 0..CHANNELS {
-            let _ = summaries.push(self.steinhart_hart_summary(channel));
+            let _ = summaries.push(self.b_parameter_summary(channel));
         }
         serde_json_core::to_vec(&summaries)
     }
@@ -647,7 +646,7 @@ pub struct PostFilterSummary {
 }
 
 #[derive(Serialize)]
-pub struct SteinhartHartSummary {
+pub struct BParameterSummary {
     channel: usize,
-    params: steinhart_hart::Parameters,
+    params: b_parameter::Parameters,
 }
