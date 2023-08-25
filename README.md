@@ -264,7 +264,6 @@ with the following keys.
 | `temperature`  | Degrees Celsius | Steinhart-Hart conversion result derived from `sens` |
 | `pid_engaged`  | Boolean         | `true` if in closed-loop mode                        |
 | `i_set`        | Amperes         | TEC output current                                   |
-| `vref`         | Volts           | MAX1968 VREF (1.5 V)                                 |
 | `dac_value`    | Volts           | AD5680 output derived from `i_set`                   |
 | `dac_feedback` | Volts           | ADC measurement of the AD5680 output                 |
 | `i_tec`        | Volts           | MAX1968 TEC current monitor                          |
