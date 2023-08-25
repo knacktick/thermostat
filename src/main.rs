@@ -185,7 +185,7 @@ fn main() -> ! {
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
                 }
 
-                fan_ctrl.cycle(channels.current_abs_max_tec_i() as f32);
+                fan_ctrl.cycle(channels.current_abs_max_tec_i());
 
                 if channels.pid_engaged() {
                     leds.g3.on();

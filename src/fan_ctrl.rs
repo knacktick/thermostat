@@ -4,7 +4,10 @@ use stm32f4xx_hal::{
     pwm::{self, PwmChannels},
     pac::TIM8,
 };
-
+use uom::si::{
+    f64::ElectricCurrent,
+    electric_current::ampere,
+};
 use crate::{
     hw_rev::HWSettings,
     command_handler::JsonBuffer,
@@ -50,8 +53,8 @@ impl FanCtrl {
         fan_ctrl
     }
 
-    pub fn cycle(&mut self, abs_max_tec_i: f32) {
-        self.abs_max_tec_i = abs_max_tec_i;
+    pub fn cycle(&mut self, abs_max_tec_i: ElectricCurrent) {
+        self.abs_max_tec_i = abs_max_tec_i.get::<ampere>() as f32;
         if self.fan_auto && self.hw_settings.fan_available {
             let scaled_current = self.abs_max_tec_i / MAX_TEC_I;
             // do not limit upper bound, as it will be limited in the set_pwm()

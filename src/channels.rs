@@ -524,9 +524,9 @@ impl Channels {
         serde_json_core::to_vec(&summaries)
     }
 
-    pub fn current_abs_max_tec_i(&mut self) -> f64 {
-        max_by(self.get_tec_i(0).abs().get::<ampere>(),
-               self.get_tec_i(1).abs().get::<ampere>(),
+    pub fn current_abs_max_tec_i(&mut self) -> ElectricCurrent {
+        max_by(self.get_tec_i(0).abs(),
+               self.get_tec_i(1).abs(),
                |a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal))
     }
 }
