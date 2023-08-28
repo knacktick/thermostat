@@ -2,8 +2,9 @@ use num_traits::float::Float;
 use serde::{Deserialize, Serialize};
 use uom::si::{
     electrical_resistance::ohm,
-    f64::{ElectricalResistance, ThermodynamicTemperature},
+    f64::{ElectricalResistance, TemperatureInterval, ThermodynamicTemperature},
     ratio::ratio,
+    temperature_interval::kelvin as kelvin_interval,
     thermodynamic_temperature::{degree_celsius, kelvin},
 };
 
@@ -12,17 +13,17 @@ use uom::si::{
 pub struct Parameters {
     /// Base temperature
     pub t0: ThermodynamicTemperature,
-    /// Base resistance
+    /// Resistance at base temperature
     pub r0: ElectricalResistance,
     /// Beta
-    pub b: f64,
+    pub b: TemperatureInterval,
 }
 
 impl Parameters {
-    /// Perform the voltage to temperature conversion.
+    /// Perform the resistance to temperature conversion.
     pub fn get_temperature(&self, r: ElectricalResistance) -> ThermodynamicTemperature {
-        let inv_temp = 1.0 / self.t0.get::<kelvin>() + (r / self.r0).get::<ratio>().ln() / self.b;
-        ThermodynamicTemperature::new::<kelvin>(1.0 / inv_temp)
+        let temp = (self.t0.recip() + (r / self.r0).get::<ratio>().ln() / self.b).recip();
+        ThermodynamicTemperature::new::<kelvin>(temp.get::<kelvin_interval>())
     }
 }
 
@@ -31,7 +32,7 @@ impl Default for Parameters {
         Parameters {
             t0: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             r0: ElectricalResistance::new::<ohm>(10_000.0),
-            b: 3800.0,
+            b: TemperatureInterval::new::<kelvin_interval>(3800.0),
         }
     }
 }

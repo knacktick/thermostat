@@ -19,7 +19,11 @@ use uom::si::{
     electric_current::ampere,
     electric_potential::volt,
     electrical_resistance::ohm,
-    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, ThermodynamicTemperature},
+    f64::{
+        ElectricCurrent, ElectricPotential, ElectricalResistance, TemperatureInterval,
+        ThermodynamicTemperature,
+    },
+    temperature_interval::kelvin,
     thermodynamic_temperature::degree_celsius,
 };
 
@@ -248,7 +252,7 @@ impl Handler {
         use super::command_parser::ShParameter::*;
         match parameter {
             T0 => sh.t0 = ThermodynamicTemperature::new::<degree_celsius>(value),
-            B => sh.b = value,
+            B => sh.b = TemperatureInterval::new::<kelvin>(value),
             R0 => sh.r0 = ElectricalResistance::new::<ohm>(value),
         }
         send_line(socket, b"{}");
