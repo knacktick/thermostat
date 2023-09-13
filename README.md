@@ -67,7 +67,18 @@ On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware 
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
 ```
 
-## Network
+## GUI Usage
+
+A GUI has been developed for easy configuration and plotting of key parameters.
+
+The Python GUI program is located at pythermostat/pythermostat/thermostat_qt.py, and is developed based on the Python libraries PyQt and PyQtGraph. The GUI can be configured and
+launched automatically by running:
+
+```
+nix run .#thermostat_gui
+```
+
+## Command Line Usage
 
 ### Connecting
 
