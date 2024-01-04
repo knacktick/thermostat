@@ -29,7 +29,7 @@ Alternatively, you can install the Rust toolchain without Nix using rustup; see 
 
 Connect SWDIO/SWCLK/RST/GND to a programmer such as ST-Link v2.1. Run OpenOCD:
 ```shell
-openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg
+openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
 ```
 
 You may need to power up the programmer before powering the device.
@@ -64,7 +64,7 @@ On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware 
 
 ### OpenOCD
 ```shell
-openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
+openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
 ```
 
 ## Network
