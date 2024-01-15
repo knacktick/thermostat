@@ -1,4 +1,3 @@
-use core::mem::MaybeUninit;
 use smoltcp::{
     iface::EthernetInterface,
     socket::{SocketSet, SocketHandle, TcpSocket, TcpSocketBuffer, SocketRef},
@@ -11,6 +10,18 @@ use crate::net::split_ipv4_config;
 pub struct SocketState<S> {
     handle: SocketHandle,
     state: S,
+}
+
+impl<'a, S: Default> SocketState<S>{
+    fn new(sockets: &mut SocketSet<'a>, tcp_rx_storage: &'a mut [u8; TCP_RX_BUFFER_SIZE], tcp_tx_storage: &'a mut [u8; TCP_TX_BUFFER_SIZE]) -> SocketState<S> {
+        let tcp_rx_buffer = TcpSocketBuffer::new(&mut tcp_rx_storage[..]);
+        let tcp_tx_buffer = TcpSocketBuffer::new(&mut tcp_tx_storage[..]);
+        let tcp_socket = TcpSocket::new(tcp_rx_buffer, tcp_tx_buffer);
+        SocketState::<S> {
+            handle: sockets.add(tcp_socket),
+            state: S::default()
+        }
+    }
 }
 
 /// Number of server sockets and therefore concurrent client
@@ -35,28 +46,27 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
     where
         F: FnOnce(&mut Server<'a, '_, S>),
     {
-        let mut sockets_storage: [_; SOCKET_COUNT] = Default::default();
-        let mut sockets = SocketSet::new(&mut sockets_storage[..]);
-        let mut states: [SocketState<S>; SOCKET_COUNT] = unsafe { MaybeUninit::uninit().assume_init() };
-
-        macro_rules! create_socket {
-            ($set:ident, $rx_storage:ident, $tx_storage:ident, $target:expr) => {
+        macro_rules! create_rtx_storage {
+            ($rx_storage:ident, $tx_storage:ident) => {
                 let mut $rx_storage = [0; TCP_RX_BUFFER_SIZE];
                 let mut $tx_storage = [0; TCP_TX_BUFFER_SIZE];
-                let tcp_rx_buffer = TcpSocketBuffer::new(&mut $rx_storage[..]);
-                let tcp_tx_buffer = TcpSocketBuffer::new(&mut $tx_storage[..]);
-                let tcp_socket = TcpSocket::new(tcp_rx_buffer, tcp_tx_buffer);
-                $target = $set.add(tcp_socket);
             }
         }
-        create_socket!(sockets, tcp_rx_storage0, tcp_tx_storage0, states[0].handle);
-        create_socket!(sockets, tcp_rx_storage1, tcp_tx_storage1, states[1].handle);
-        create_socket!(sockets, tcp_rx_storage2, tcp_tx_storage2, states[2].handle);
-        create_socket!(sockets, tcp_rx_storage3, tcp_tx_storage3, states[3].handle);
 
-        for state in &mut states {
-            state.state = S::default();
-        }
+        create_rtx_storage!(tcp_rx_storage0, tcp_tx_storage0);
+        create_rtx_storage!(tcp_rx_storage1, tcp_tx_storage1);
+        create_rtx_storage!(tcp_rx_storage2, tcp_tx_storage2);
+        create_rtx_storage!(tcp_rx_storage3, tcp_tx_storage3);
+
+        let mut sockets_storage: [_; SOCKET_COUNT] = Default::default();
+        let mut sockets = SocketSet::new(&mut sockets_storage[..]);
+
+        let states: [SocketState<S>; SOCKET_COUNT] = [
+            SocketState::<S>::new(&mut sockets, &mut tcp_rx_storage0, &mut tcp_tx_storage0),
+            SocketState::<S>::new(&mut sockets, &mut tcp_rx_storage1, &mut tcp_tx_storage1),
+            SocketState::<S>::new(&mut sockets, &mut tcp_rx_storage2, &mut tcp_tx_storage2),
+            SocketState::<S>::new(&mut sockets, &mut tcp_rx_storage3, &mut tcp_tx_storage3),
+        ];
 
         let mut server = Server {
             states,
