@@ -1,3 +1,4 @@
+use core::arch::asm;
 use cortex_m_rt::pre_init;
 use stm32f4xx_hal::stm32::{RCC, SYSCFG};
 

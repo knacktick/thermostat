@@ -8,8 +8,8 @@
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; overlays = [ (import mozilla-overlay) ]; };
       rustManifest = pkgs.fetchurl {
-        url = "https://static.rust-lang.org/dist/2021-10-26/channel-rust-nightly.toml";
-        sha256 = "sha256-1hLbypXA+nuH7o3AHCokzSBZAvQxvef4x9+XxO3aBao=";
+        url = "https://static.rust-lang.org/dist/2022-12-15/channel-rust-stable.toml";
+        hash = "sha256-S7epLlflwt0d1GZP44u5Xosgf6dRrmr8xxC+Ml2Pq7c=";
       };
 
       targets = [
@@ -22,12 +22,12 @@
           inherit targets;
           extensions = ["rust-src"];
         };
-      rust = rustChannelOfTargets "nightly" null targets;
+      rust = rustChannelOfTargets "stable" null targets;
       rustPlatform = pkgs.recurseIntoAttrs (pkgs.makeRustPlatform {
         rustc = rust;
         cargo = rust;
       });
-      thermostat = rustPlatform.buildRustPackage rec {
+      thermostat = rustPlatform.buildRustPackage {
         name = "thermostat";
         version = "0.0.0";
 
