@@ -32,7 +32,7 @@ pub enum PinsAdcReadTarget {
 }
 
 pub const CHANNELS: usize = 2;
-pub const R_SENSE: f64 = 0.05;
+const R_SENSE: f64 = 0.05;
 
 // From design specs
 pub const MAX_TEC_I: ElectricCurrent = ElectricCurrent {
@@ -56,14 +56,14 @@ const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
     units: PhantomData,
     value: 3.0,
 };
-// TODO: -pub
+
 pub struct Channels {
     channel0: Channel<Channel0>,
     channel1: Channel<Channel1>,
     adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
     /// stm32f4 integrated adc
     pins_adc: pins::PinsAdc,
-    pub pwm: pins::PwmPins,
+    pwm: pins::PwmPins,
 }
 
 impl Channels {
