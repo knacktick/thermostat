@@ -345,7 +345,7 @@ impl Handler {
 
     fn set_fan(socket: &mut TcpSocket, fan_pwm: u32, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
         if !fan_ctrl.fan_available() {
-            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have fan!\" }");
+            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have a fan!\" }");
             return Ok(Handler::Handled);
         }
         fan_ctrl.set_auto_mode(false);
@@ -374,7 +374,7 @@ impl Handler {
 
     fn fan_auto(socket: &mut TcpSocket, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
         if !fan_ctrl.fan_available() {
-            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have fan!\" }");
+            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have a fan!\" }");
             return Ok(Handler::Handled);
         }
         fan_ctrl.set_auto_mode(true);
