@@ -20,6 +20,7 @@ use crate::{
     command_handler::JsonBuffer,
     pins,
     steinhart_hart,
+    hw_rev,
 };
 
 pub const CHANNELS: usize = 2;
@@ -28,17 +29,18 @@ pub const R_SENSE: f64 = 0.05;
 const DAC_OUT_V_MAX: f64 = 3.0;
 
 // TODO: -pub
-pub struct Channels {
+pub struct Channels<'a> {
     channel0: Channel<Channel0>,
     channel1: Channel<Channel1>,
     pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
     /// stm32f4 integrated adc
     pins_adc: pins::PinsAdc,
     pub pwm: pins::PwmPins,
+    hwrev: &'a hw_rev::HWRev,
 }
 
-impl Channels {
-    pub fn new(pins: pins::Pins) -> Self {
+impl<'a> Channels<'a> {
+    pub fn new(pins: pins::Pins, hwrev: &'a hw_rev::HWRev) -> Self {
         let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
         // Feature not used
         adc.set_sync_enable(false).unwrap();
@@ -56,7 +58,7 @@ impl Channels {
         let channel1 = Channel::new(pins.channel1, adc_calibration1);
         let pins_adc = pins.pins_adc;
         let pwm = pins.pwm;
-        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
+        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm, hwrev };
         for channel in 0..CHANNELS {
             channels.calibrate_dac_value(channel);
             channels.set_i(channel, ElectricCurrent::new::<ampere>(0.0));
@@ -429,8 +431,8 @@ impl Channels {
 
     fn report(&mut self, channel: usize) -> Report {
         let i_set = self.get_i(channel);
-        let i_tec = self.read_itec(channel);
-        let tec_i = self.get_tec_i(channel);
+        let i_tec = if self.hwrev.major > 2 {Some(self.read_itec(channel))} else {None};
+        let tec_i = if self.hwrev.major > 2 {Some(self.get_tec_i(channel))} else {None};
         let dac_value = self.get_dac(channel);
         let state = self.channel_state(channel);
         let pid_output = ElectricCurrent::new::<ampere>(state.pid.y1);
@@ -543,8 +545,8 @@ pub struct Report {
     i_set: ElectricCurrent,
     dac_value: ElectricPotential,
     dac_feedback: ElectricPotential,
-    i_tec: ElectricPotential,
-    tec_i: ElectricCurrent,
+    i_tec: Option<ElectricPotential>,
+    tec_i: Option<ElectricCurrent>,
     tec_u_meas: ElectricPotential,
     pid_output: ElectricCurrent,
 }
