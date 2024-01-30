@@ -62,7 +62,8 @@
       devShells.x86_64-linux.default = pkgs.mkShellNoCC {
         name = "thermostat-dev-shell";
         packages = with pkgs; [
-          rust openocd dfu-util
+          rust llvm
+          openocd dfu-util
           ] ++ (with python3Packages; [
             numpy matplotlib
           ]);
