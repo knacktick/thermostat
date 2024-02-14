@@ -2,11 +2,13 @@ use smoltcp::time::{Duration, Instant};
 use uom::si::{
     f64::{
         ElectricPotential,
+        ElectricCurrent,
         ElectricalResistance,
         ThermodynamicTemperature,
         Time,
     },
     electric_potential::volt,
+    electric_current::ampere,
     electrical_resistance::ohm,
     thermodynamic_temperature::degree_celsius,
     time::millisecond,
@@ -29,6 +31,7 @@ pub struct ChannelState {
     /// i_set 0A center point
     pub center: CenterPoint,
     pub dac_value: ElectricPotential,
+    pub i_set: ElectricCurrent,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
@@ -44,6 +47,7 @@ impl ChannelState {
             adc_interval: Duration::from_millis(100),
             center: CenterPoint::Vref,
             dac_value: ElectricPotential::new::<volt>(0.0),
+            i_set: ElectricCurrent::new::<ampere>(0.0),
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),

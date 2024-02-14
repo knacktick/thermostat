@@ -113,11 +113,8 @@ impl<'a> Channels<'a> {
     }
 
     pub fn get_i(&mut self, channel: usize) -> ElectricCurrent {
-        let center_point = self.get_center(channel);
-        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
-        let voltage = self.get_dac(channel);
-        let i_tec = (voltage - center_point) / (10.0 * r_sense);
-        i_tec
+        let i_set = self.channel_state(channel).i_set;
+        i_set
     }
 
     /// i_set DAC
@@ -143,6 +140,7 @@ impl<'a> Channels<'a> {
         let voltage = i_tec * 10.0 * r_sense + center_point;
         let voltage = self.set_dac(channel, voltage);
         let i_tec = (voltage - center_point) / (10.0 * r_sense);
+        self.channel_state(channel).i_set = i_tec;
         i_tec
     }
 
