@@ -66,21 +66,31 @@ pub trait ChannelPins {
     type TecUMeasPin;
 }
 
+pub enum Channel0VRef {
+    Analog(PA0<Analog>),
+    Disabled(PA0<Input<Floating>>),
+}
+
 impl ChannelPins for Channel0 {
     type DacSpi = Dac0Spi;
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
-    type VRefPin = PA0<Analog>;
+    type VRefPin = Channel0VRef;
     type ItecPin = PA6<Analog>;
     type DacFeedbackPin = PA4<Analog>;
     type TecUMeasPin = PC2<Analog>;
+}
+
+pub enum Channel1VRef {
+    Analog(PA3<Analog>),
+    Disabled(PA3<Input<Floating>>),
 }
 
 impl ChannelPins for Channel1 {
     type DacSpi = Dac1Spi;
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
-    type VRefPin = PA3<Analog>;
+    type VRefPin = Channel1VRef;
     type ItecPin = PB0<Analog>;
     type DacFeedbackPin = PA5<Analog>;
     type TecUMeasPin = PC3<Analog>;
@@ -150,13 +160,17 @@ impl Pins {
             gpioe.pe13, gpioe.pe14
         );
 
+        let hwrev = HWRev::detect_hw_rev(&HWRevPins {hwrev0: gpiod.pd0, hwrev1: gpiod.pd1,
+            hwrev2: gpiod.pd2, hwrev3: gpiod.pd3});
+        let hw_settings = hwrev.settings();
+
         let (dac0_spi, dac0_sync) = Self::setup_dac0(
             clocks, spi4,
             gpioe.pe2, gpioe.pe4, gpioe.pe6
         );
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
         let _ = shdn0.set_low();
-        let vref0_pin = gpioa.pa0.into_analog();
+        let vref0_pin = if hwrev.major > 2 {Channel0VRef::Analog(gpioa.pa0.into_analog())} else {Channel0VRef::Disabled(gpioa.pa0)};
         let itec0_pin = gpioa.pa6.into_analog();
         let dac_feedback0_pin = gpioa.pa4.into_analog();
         let tec_u_meas0_pin = gpioc.pc2.into_analog();
@@ -176,7 +190,7 @@ impl Pins {
         );
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
-        let vref1_pin = gpioa.pa3.into_analog();
+        let vref1_pin = if hwrev.major > 2 {Channel1VRef::Analog(gpioa.pa3.into_analog())} else {Channel1VRef::Disabled(gpioa.pa3)};
         let itec1_pin = gpiob.pb0.into_analog();
         let dac_feedback1_pin = gpioa.pa5.into_analog();
         let tec_u_meas1_pin = gpioc.pc3.into_analog();
@@ -197,10 +211,6 @@ impl Pins {
             channel0,
             channel1,
         };
-
-        let hwrev = HWRev::detect_hw_rev(&HWRevPins {hwrev0: gpiod.pd0, hwrev1: gpiod.pd1,
-            hwrev2: gpiod.pd2, hwrev3: gpiod.pd3});
-        let hw_settings = hwrev.settings();
 
         let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
 

@@ -18,7 +18,7 @@ use crate::{
     channel_state::ChannelState,
     command_parser::{CenterPoint, PwmPin},
     command_handler::JsonBuffer,
-    pins,
+    pins::{self, Channel0VRef, Channel1VRef},
     steinhart_hart,
     hw_rev,
 };
@@ -203,20 +203,30 @@ impl<'a> Channels<'a> {
     pub fn read_vref(&mut self, channel: usize) -> ElectricPotential {
         match channel {
             0 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel0.vref_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
+                match &self.channel0.vref_pin {
+                    Channel0VRef::Analog(vref_pin) => {
+                        let sample = self.pins_adc.convert(
+                            vref_pin,
+                            stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                        );
+                        let mv = self.pins_adc.sample_to_millivolts(sample);
+                        ElectricPotential::new::<millivolt>(mv as f64)
+                    },
+                    Channel0VRef::Disabled(_) => ElectricPotential::new::<volt>(1.5)
+                }
             }
             1 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel1.vref_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
+                match &self.channel1.vref_pin {
+                    Channel1VRef::Analog(vref_pin) => {
+                        let sample = self.pins_adc.convert(
+                            vref_pin,
+                            stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                        );
+                        let mv = self.pins_adc.sample_to_millivolts(sample);
+                        ElectricPotential::new::<millivolt>(mv as f64)
+                    },
+                    Channel1VRef::Disabled(_) => ElectricPotential::new::<volt>(1.5)
+                }
             }
             _ => unreachable!(),
         }
