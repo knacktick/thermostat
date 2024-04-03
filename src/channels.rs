@@ -25,6 +25,10 @@ use crate::{
 
 pub const CHANNELS: usize = 2;
 pub const R_SENSE: f64 = 0.05;
+
+// as stated in the MAX1968 datasheet
+pub const MAX_TEC_I: f64 = 3.0;
+
 // DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
 const DAC_OUT_V_MAX: f64 = 3.0;
 
@@ -130,6 +134,11 @@ impl<'a> Channels<'a> {
     }
 
     pub fn set_i(&mut self, channel: usize, i_set: ElectricCurrent) -> ElectricCurrent {
+        // Silently clamp i_set
+        let i_ceiling = ElectricCurrent::new::<ampere>(MAX_TEC_I);
+        let i_floor = ElectricCurrent::new::<ampere>(-MAX_TEC_I);
+        let i_set = i_set.min(i_ceiling).max(i_floor);
+
         let vref_meas = match channel.into() {
             0 => self.channel0.vref_meas,
             1 => self.channel1.vref_meas,
