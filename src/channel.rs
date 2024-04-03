@@ -24,7 +24,7 @@ pub struct Channel<C: ChannelPins> {
     pub vref_meas: ElectricPotential,
     pub shdn: C::Shdn,
     pub vref_pin: C::VRefPin,
-    pub itec_pin: C::ItecPin,
+    pub itec_pin: C::ITecPin,
     /// feedback from `dac` output
     pub dac_feedback_pin: C::DacFeedbackPin,
     pub tec_u_meas_pin: C::TecUMeasPin,

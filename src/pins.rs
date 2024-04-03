@@ -61,7 +61,7 @@ pub trait ChannelPins {
     type DacSync: OutputPin;
     type Shdn: OutputPin;
     type VRefPin;
-    type ItecPin;
+    type ITecPin;
     type DacFeedbackPin;
     type TecUMeasPin;
 }
@@ -76,7 +76,7 @@ impl ChannelPins for Channel0 {
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
     type VRefPin = Channel0VRef;
-    type ItecPin = PA6<Analog>;
+    type ITecPin = PA6<Analog>;
     type DacFeedbackPin = PA4<Analog>;
     type TecUMeasPin = PC2<Analog>;
 }
@@ -91,7 +91,7 @@ impl ChannelPins for Channel1 {
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
     type VRefPin = Channel1VRef;
-    type ItecPin = PB0<Analog>;
+    type ITecPin = PB0<Analog>;
     type DacFeedbackPin = PA5<Analog>;
     type TecUMeasPin = PC3<Analog>;
 }
@@ -108,7 +108,7 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_sync: C::DacSync,
     pub shdn: C::Shdn,
     pub vref_pin: C::VRefPin,
-    pub itec_pin: C::ItecPin,
+    pub itec_pin: C::ITecPin,
     pub dac_feedback_pin: C::DacFeedbackPin,
     pub tec_u_meas_pin: C::TecUMeasPin,
 }
