@@ -22,6 +22,13 @@ use crate::{
     steinhart_hart,
 };
 
+pub enum PinsAdcReadTarget {
+    VREF,
+    DacVfb,
+    ITec,
+    VTec,
+}
+
 pub const CHANNELS: usize = 2;
 pub const R_SENSE: f64 = 0.05;
 
@@ -102,7 +109,7 @@ impl Channels {
     pub fn get_center(&mut self, channel: usize) -> ElectricPotential {
         match self.channel_state(channel).center {
             CenterPoint::Vref =>
-                self.read_vref(channel),
+                self.adc_read(channel, PinsAdcReadTarget::VREF, 8),
             CenterPoint::Override(center_point) =>
                 ElectricPotential::new::<volt>(center_point.into()),
         }
@@ -151,113 +158,116 @@ impl Channels {
         i_set
     }
 
-    pub fn read_dac_feedback(&mut self, channel: usize) -> ElectricPotential {
+    /// AN4073: ADC Reading Dispersion can be reduced through Averaging
+    pub fn adc_read(&mut self, channel: usize, adc_read_target: PinsAdcReadTarget, avg_pt: u16) -> ElectricPotential {
+        let mut sample: u32 = 0;
         match channel {
             0 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel0.dac_feedback_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
+                sample = match adc_read_target {
+                    PinsAdcReadTarget::VREF => {
+                        match &self.channel0.vref_pin {
+                            Channel0VRef::Analog(vref_pin) => {
+                                for _ in (0..avg_pt).rev() {
+                                    sample += self
+                                        .pins_adc
+                                        .convert(vref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                        as u32;
+                                }
+                                sample / avg_pt as u32
+                            },
+                            Channel0VRef::Disabled(_) => {2048 as u32}
+                        }
+                    }
+                    PinsAdcReadTarget::DacVfb => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel0.dac_feedback_pin,stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                    PinsAdcReadTarget::ITec => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel0.itec_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                    PinsAdcReadTarget::VTec => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel0.tec_u_meas_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                };
+                let mv = self.pins_adc.sample_to_millivolts(sample as u16);
                 ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel1.dac_feedback_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
+                sample = match adc_read_target {
+                    PinsAdcReadTarget::VREF => {
+                        match &self.channel1.vref_pin {
+                            Channel1VRef::Analog(vref_pin) => {
+                                for _ in (0..avg_pt).rev() {
+                                    sample += self
+                                        .pins_adc
+                                        .convert(vref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                        as u32;
+                                }
+                                sample / avg_pt as u32
+                            },
+                            Channel1VRef::Disabled(_) => {2048 as u32}
+                        }
+                    }
+                    PinsAdcReadTarget::DacVfb => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel1.dac_feedback_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                    PinsAdcReadTarget::ITec => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel1.itec_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                    PinsAdcReadTarget::VTec => {
+                        for _ in (0..avg_pt).rev() {
+                            sample += self
+                                .pins_adc
+                                .convert(&self.channel1.tec_u_meas_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
+                                as u32;
+                        }
+                        sample / avg_pt as u32
+                    }
+                };
+                let mv = self.pins_adc.sample_to_millivolts(sample as u16);
                 ElectricPotential::new::<millivolt>(mv as f64)
             }
-            _ => unreachable!(),
+            _ => unreachable!()
         }
     }
 
     pub fn read_dac_feedback_until_stable(&mut self, channel: usize, tolerance: ElectricPotential) -> ElectricPotential {
-        let mut prev = self.read_dac_feedback(channel);
+        let mut prev = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 1);
         loop {
-            let current = self.read_dac_feedback(channel);
+            let current = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 1);
             if (current - prev).abs() < tolerance {
                 return current;
             }
             prev = current;
-        }
-    }
-
-    pub fn read_itec(&mut self, channel: usize) -> ElectricPotential {
-        match channel {
-            0 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel0.itec_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
-            }
-            1 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel1.itec_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    /// should be 1.5V
-    pub fn read_vref(&mut self, channel: usize) -> ElectricPotential {
-        match channel {
-            0 => {
-                match &self.channel0.vref_pin {
-                    Channel0VRef::Analog(vref_pin) => {
-                        let sample = self.pins_adc.convert(
-                            vref_pin,
-                            stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                        );
-                        let mv = self.pins_adc.sample_to_millivolts(sample);
-                        ElectricPotential::new::<millivolt>(mv as f64)
-                    },
-                    Channel0VRef::Disabled(_) => ElectricPotential::new::<volt>(1.5)
-                }
-            }
-            1 => {
-                match &self.channel1.vref_pin {
-                    Channel1VRef::Analog(vref_pin) => {
-                        let sample = self.pins_adc.convert(
-                            vref_pin,
-                            stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                        );
-                        let mv = self.pins_adc.sample_to_millivolts(sample);
-                        ElectricPotential::new::<millivolt>(mv as f64)
-                    },
-                    Channel1VRef::Disabled(_) => ElectricPotential::new::<volt>(1.5)
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn read_tec_u_meas(&mut self, channel: usize) -> ElectricPotential {
-        match channel {
-            0 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel0.tec_u_meas_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
-            }
-            1 => {
-                let sample = self.pins_adc.convert(
-                    &self.channel1.tec_u_meas_pin,
-                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                );
-                let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<millivolt>(mv as f64)
-            }
-            _ => unreachable!(),
         }
     }
 
@@ -388,12 +398,12 @@ impl Channels {
 
     // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
-        (self.read_itec(channel) - self.read_vref(channel)) / ElectricalResistance::new::<ohm>(0.4)
+        (self.adc_read(channel, PinsAdcReadTarget::ITec, 16) - self.adc_read(channel, PinsAdcReadTarget::VREF, 16)) / ElectricalResistance::new::<ohm>(0.4)
     }
 
     // Get voltage across TEC
     pub fn get_tec_v(&mut self, channel: usize) -> ElectricPotential {
-        (self.read_tec_u_meas(channel) - ElectricPotential::new::<volt>(1.5)) * 4.0
+        (self.adc_read(channel, PinsAdcReadTarget::VTec, 16) - ElectricPotential::new::<volt>(1.5)) * 4.0
     }
 
     fn set_pwm(&mut self, channel: usize, pin: PwmPin, duty: f64) -> f64 {
@@ -446,7 +456,7 @@ impl Channels {
 
     fn report(&mut self, channel: usize) -> Report {
         let i_set = self.get_i(channel);
-        let i_tec = self.read_itec(channel);
+        let i_tec = self.adc_read(channel, PinsAdcReadTarget::ITec, 16);
         let tec_i = self.get_tec_i(channel);
         let dac_value = self.get_dac(channel);
         let state = self.channel_state(channel);
@@ -462,7 +472,7 @@ impl Channels {
             pid_engaged: state.pid_engaged,
             i_set,
             dac_value,
-            dac_feedback: self.read_dac_feedback(channel),
+            dac_feedback: self.adc_read(channel, PinsAdcReadTarget::DacVfb, 1),
             i_tec,
             tec_i,
             tec_u_meas: self.get_tec_v(channel),
