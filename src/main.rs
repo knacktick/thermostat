@@ -138,7 +138,7 @@ fn main() -> ! {
 
     let mut store = flash_store::store(dp.FLASH);
 
-    let mut channels = Channels::new(pins, &hwrev);
+    let mut channels = Channels::new(pins);
     for c in 0..CHANNELS {
         match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
             Ok(Some(config)) =>
