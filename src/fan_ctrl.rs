@@ -54,7 +54,7 @@ impl FanCtrl {
     pub fn cycle(&mut self, abs_max_tec_i: ElectricCurrent) {
         self.abs_max_tec_i = abs_max_tec_i.get::<ampere>() as f32;
         if self.fan_auto && self.hw_settings.fan_available {
-            let scaled_current = self.abs_max_tec_i / MAX_TEC_I as f32;
+            let scaled_current = self.abs_max_tec_i / MAX_TEC_I.get::<ampere>() as f32;
             // do not limit upper bound, as it will be limited in the set_pwm()
             let pwm = (MAX_USER_FAN_PWM * (scaled_current * (scaled_current * self.k_a + self.k_b) + self.k_c)) as u32;
             self.set_pwm(pwm);

@@ -1,5 +1,6 @@
-use core::cmp::max_by;
+use core::{cmp::max_by, marker::PhantomData};
 use heapless::{consts::U2, Vec};
+use num_traits::Zero;
 use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
@@ -32,12 +33,24 @@ pub enum PinsAdcReadTarget {
 pub const CHANNELS: usize = 2;
 pub const R_SENSE: f64 = 0.05;
 
-// as stated in the MAX1968 datasheet
-pub const MAX_TEC_I: f64 = 3.0;
+// From design specs
+pub const MAX_TEC_I: ElectricCurrent = ElectricCurrent {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 2.0,
+};
+pub const MAX_TEC_V: ElectricPotential = ElectricPotential {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 4.0,
+};
 
 // DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
-const DAC_OUT_V_MAX: f64 = 3.0;
-
+const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 3.0,
+};
 // TODO: -pub
 pub struct Channels {
     channel0: Channel<Channel0>,
@@ -128,7 +141,7 @@ impl Channels {
 
     /// i_set DAC
     fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> ElectricPotential {
-        let value = ((voltage / ElectricPotential::new::<volt>(DAC_OUT_V_MAX)).get::<ratio>() * (ad5680::MAX_VALUE as f64)) as u32 ;
+        let value = ((voltage / DAC_OUT_V_MAX).get::<ratio>() * (ad5680::MAX_VALUE as f64)) as u32 ;
         match channel {
             0 => self.channel0.dac.set(value).unwrap(),
             1 => self.channel1.dac.set(value).unwrap(),
@@ -139,11 +152,7 @@ impl Channels {
     }
 
     pub fn set_i(&mut self, channel: usize, i_set: ElectricCurrent) -> ElectricCurrent {
-        // Silently clamp i_set
-        let i_ceiling = ElectricCurrent::new::<ampere>(MAX_TEC_I);
-        let i_floor = ElectricCurrent::new::<ampere>(-MAX_TEC_I);
-        let i_set = i_set.min(i_ceiling).max(i_floor);
-
+        let i_set = i_set.min(MAX_TEC_I).max(-MAX_TEC_I);
         let vref_meas = match channel.into() {
             0 => self.channel0.vref_meas,
             1 => self.channel1.vref_meas,
@@ -318,7 +327,7 @@ impl Channels {
                     best_error = error;
                     start_value = prev_value;
 
-                    let vref = (value as f64 / ad5680::MAX_VALUE as f64) * ElectricPotential::new::<volt>(DAC_OUT_V_MAX);
+                    let vref = (value as f64 / ad5680::MAX_VALUE as f64) * DAC_OUT_V_MAX;
                     match channel {
                         0 => self.channel0.vref_meas = vref,
                         1 => self.channel1.vref_meas = vref,
@@ -378,22 +387,22 @@ impl Channels {
         }
     }
 
-    pub fn get_max_v(&mut self, channel: usize) -> ElectricPotential {
+    pub fn get_max_v(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
         let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let duty = self.get_pwm(channel, PwmPin::MaxV);
-        duty * max
+        (duty * max, MAX_TEC_V)
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxIPos);
-        (duty * max, max)
+        (duty * max, MAX_TEC_I)
     }
 
     pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxINeg);
-        (duty * max, max)
+        (duty * max, MAX_TEC_I)
     }
 
     // Get current passing through TEC
@@ -435,21 +444,21 @@ impl Channels {
 
     pub fn set_max_v(&mut self, channel: usize, max_v: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
         let max = 4.0 * ElectricPotential::new::<volt>(3.3);
-        let duty = (max_v / max).get::<ratio>();
+        let duty = (max_v.min(MAX_TEC_V).max(ElectricPotential::zero()) / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
         (duty * max, max)
     }
 
     pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
-        let duty = (max_i_pos / max).get::<ratio>();
+        let duty = (max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero()) / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxIPos, duty);
         (duty * max, max)
     }
 
     pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
-        let duty = (max_i_neg / max).get::<ratio>();
+        let duty = (max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero()) / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
         (duty * max, max)
     }
@@ -509,8 +518,8 @@ impl Channels {
         PwmSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
-            i_set: (self.get_i(channel), ElectricCurrent::new::<ampere>(3.0)).into(),
-            max_v: (self.get_max_v(channel), ElectricPotential::new::<volt>(5.0)).into(),
+            i_set: (self.get_i(channel), MAX_TEC_I).into(),
+            max_v: self.get_max_v(channel).into(),
             max_i_pos: self.get_max_i_pos(channel).into(),
             max_i_neg: self.get_max_i_neg(channel).into(),
         }
