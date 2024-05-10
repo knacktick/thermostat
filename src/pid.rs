@@ -54,15 +54,13 @@ impl Controller {
     //       + x0 * (kp + ki + kd)
     //       - x1 * (kp + 2kd)
     //       + x2 * kd
-    //       + kp * (u0 - u1)
     // y0  = clip(y0', ymin, ymax)
     pub fn update(&mut self, input: f64) -> f64 {
         
         let mut output: f64 = self.y1 - self.target * f64::from(self.parameters.ki)
                             + input * f64::from(self.parameters.kp + self.parameters.ki + self.parameters.kd)
                             - self.x1 * f64::from(self.parameters.kp + 2.0 * self.parameters.kd)
-                            + self.x2 * f64::from(self.parameters.kd)
-                            + f64::from(self.parameters.kp) * (self.target - self.u1);
+                            + self.x2 * f64::from(self.parameters.kd);
         if output < self.parameters.output_min.into() {
             output = self.parameters.output_min.into();
         }
