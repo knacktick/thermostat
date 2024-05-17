@@ -1,3 +1,4 @@
+use num_traits::Zero;
 use serde::{Serialize, Deserialize};
 use uom::si::{
     electric_potential::volt,
@@ -18,6 +19,7 @@ pub struct ChannelConfig {
     pid: pid::Parameters,
     pid_target: f32,
     pid_engaged: bool,
+    i_set: ElectricCurrent,
     sh: steinhart_hart::Parameters,
     pwm: PwmLimits,
     /// uses variant `PostFilter::Invalid` instead of `None` to save space
@@ -33,11 +35,17 @@ impl ChannelConfig {
             .unwrap_or(PostFilter::Invalid);
 
         let state = channels.channel_state(channel);
+        let i_set = if state.pid_engaged { 
+            ElectricCurrent::zero() 
+        } else { 
+            state.i_set 
+        };
         ChannelConfig {
             center: state.center.clone(),
             pid: state.pid.parameters.clone(),
             pid_target: state.pid.target as f32,
             pid_engaged: state.pid_engaged,
+            i_set: i_set,
             sh: state.sh.clone(),
             pwm,
             adc_postfilter,
@@ -59,6 +67,7 @@ impl ChannelConfig {
             adc_postfilter => Some(adc_postfilter),
         };
         let _ = channels.adc.set_postfilter(channel as u8, adc_postfilter);
+        let _ = channels.set_i(channel, self.i_set);
     }
 }
 
