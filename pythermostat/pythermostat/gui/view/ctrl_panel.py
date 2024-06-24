@@ -91,7 +91,7 @@ class CtrlPanel(QObject):
                 partial(self.load_settings, i)
             )
             self.params[i].child(
-                "PID Config", "PID Auto Tune", "Run"
+                "PID Settings", "PID Auto Tune", "Run"
             ).sigActivated.connect(partial(self.pid_auto_tune_request, i))
 
         self.thermostat.pid_update.connect(self.update_pid)
@@ -170,23 +170,23 @@ class CtrlPanel(QObject):
         for settings in pid_settings:
             channel = settings["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("PID Config", "Kp").setValue(
+                self.params[channel].child("PID Settings", "Kp").setValue(
                     settings["parameters"]["kp"]
                 )
-                self.params[channel].child("PID Config", "Ki").setValue(
+                self.params[channel].child("PID Settings", "Ki").setValue(
                     settings["parameters"]["ki"]
                 )
-                self.params[channel].child("PID Config", "Kd").setValue(
+                self.params[channel].child("PID Settings", "Kd").setValue(
                     settings["parameters"]["kd"]
                 )
                 self.params[channel].child(
-                    "PID Config", "PID Output Clamping", "Minimum"
+                    "PID Settings", "PID Output Clamping", "Minimum"
                 ).setValue(settings["parameters"]["output_min"] * 1000)
                 self.params[channel].child(
-                    "PID Config", "PID Output Clamping", "Maximum"
+                    "PID Settings", "PID Output Clamping", "Maximum"
                 ).setValue(settings["parameters"]["output_max"] * 1000)
                 self.params[channel].child(
-                    "Output Config", "Control Method", "Set Temperature"
+                    "Output Settings", "Control Method", "Set Temperature"
                 ).setValue(settings["target"])
 
     @pyqtSlot(list)
@@ -194,11 +194,13 @@ class CtrlPanel(QObject):
         for settings in report_data:
             channel = settings["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("Output Config", "Control Method").setValue(
+                self.params[channel].child(
+                    "Output Settings", "Control Method"
+                ).setValue(
                     "Temperature PID" if settings["pid_engaged"] else "Constant Current"
                 )
                 self.params[channel].child(
-                    "Output Config", "Control Method", "Set Current"
+                    "Output Settings", "Control Method", "Set Current"
                 ).setValue(settings["i_set"] * 1000)
                 if settings["temperature"] is not None:
                     self.params[channel].child("Readings", "Temperature").setValue(
@@ -214,13 +216,13 @@ class CtrlPanel(QObject):
         for sh_param in sh_data:
             channel = sh_param["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("Thermistor Config", "T₀").setValue(
+                self.params[channel].child("Thermistor Settings", "T₀").setValue(
                     sh_param["params"]["t0"] - 273.15
                 )
-                self.params[channel].child("Thermistor Config", "R₀").setValue(
+                self.params[channel].child("Thermistor Settings", "R₀").setValue(
                     sh_param["params"]["r0"]
                 )
-                self.params[channel].child("Thermistor Config", "B").setValue(
+                self.params[channel].child("Thermistor Settings", "B").setValue(
                     sh_param["params"]["b"]
                 )
 
@@ -230,13 +232,13 @@ class CtrlPanel(QObject):
             channel = output_params["channel"]
             with QSignalBlocker(self.params[channel]):
                 self.params[channel].child(
-                    "Output Config", "Limits", "Max Voltage Difference"
+                    "Output Settings", "Limits", "Max Voltage Difference"
                 ).setValue(output_params["max_v"])
                 self.params[channel].child(
-                    "Output Config", "Limits", "Max Cooling Current"
+                    "Output Settings", "Limits", "Max Cooling Current"
                 ).setValue(output_params["max_i_pos"] * 1000)
                 self.params[channel].child(
-                    "Output Config", "Limits", "Max Heating Current"
+                    "Output Settings", "Limits", "Max Heating Current"
                 ).setValue(output_params["max_i_neg"] * 1000)
 
     @pyqtSlot(list)
@@ -245,14 +247,14 @@ class CtrlPanel(QObject):
             channel = postfilter_params["channel"]
             with QSignalBlocker(self.params[channel]):
                 self.params[channel].child(
-                    "Thermistor Config", "Postfilter Rate"
+                    "Thermistor Settings", "Postfilter Rate"
                 ).setValue(postfilter_params["rate"])
 
     def update_pid_autotune(self, ch, state):
         match state:
             case PIDAutotuneState.OFF:
                 self.change_params_title(
-                    ch, ("PID Config", "PID Auto Tune", "Run"), "Run"
+                    ch, ("PID Settings", "PID Auto Tune", "Run"), "Run"
                 )
             case (
                 PIDAutotuneState.READY
@@ -260,12 +262,12 @@ class CtrlPanel(QObject):
                 | PIDAutotuneState.RELAY_STEP_DOWN
             ):
                 self.change_params_title(
-                    ch, ("PID Config", "PID Auto Tune", "Run"), "Stop"
+                    ch, ("PID Settings", "PID Auto Tune", "Run"), "Stop"
                 )
             case PIDAutotuneState.SUCCEEDED:
                 self.info_box.display_info_box(
                     "PID Autotune Success",
-                    f"Channel {ch} PID Config has been loaded to Thermostat. Regulating temperature.",
+                    f"Channel {ch} PID Settings has been loaded to Thermostat. Regulating temperature.",
                 )
             case PIDAutotuneState.FAILED:
                 self.info_box.display_info_box(

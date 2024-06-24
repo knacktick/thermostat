@@ -214,10 +214,10 @@ class ThermostatSettingsMenu(QtWidgets.QMenu):
             await self._thermostat.load_cfg()
 
             self._info_box.display_info_box(
-                "Config loaded", "All channel configs have been loaded from flash."
+                "Settings loaded", "All channel settings have been loaded from flash."
             )
 
-        self.load_config_action = QtGui.QAction("Load Config", self)
+        self.load_config_action = QtGui.QAction("Load Settings", self)
         self.load_config_action.triggered.connect(load)
         self.addAction(self.load_config_action)
 
@@ -226,10 +226,10 @@ class ThermostatSettingsMenu(QtWidgets.QMenu):
             await self._thermostat.save_cfg()
 
             self._info_box.display_info_box(
-                "Config saved", "All channel configs have been saved to flash."
+                "Settings saved", "All channel settings have been saved to flash."
             )
 
-        self.save_config_action = QtGui.QAction("Save Config", self)
+        self.save_config_action = QtGui.QAction("Save Settings", self)
         self.save_config_action.triggered.connect(save)
         self.addAction(self.save_config_action)
 
