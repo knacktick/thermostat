@@ -51,13 +51,14 @@
     in {
       packages.x86_64-linux = {
         inherit thermostat;
+        default = thermostat;
       };
 
       hydraJobs = {
         inherit thermostat;
       };
 
-      devShell.x86_64-linux = pkgs.mkShell {
+      devShells.x86_64-linux.default = pkgs.mkShell {
         name = "thermostat-dev-shell";
         buildInputs = with pkgs; [
           rust openocd dfu-util
@@ -65,6 +66,5 @@
             numpy matplotlib
           ]);
       };
-      defaultPackage.x86_64-linux = thermostat;
     };
 }
