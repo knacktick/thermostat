@@ -43,6 +43,7 @@
                      "triggerOnShow": true,
                      "decimals": 6,
                      "suffix": "mA",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "output",
                         "field": "i_set"
@@ -59,6 +60,7 @@
                         300
                      ],
                      "format": "{value:.4f} °C",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "pid",
                         "field": "target"
@@ -83,6 +85,7 @@
                         2000
                      ],
                      "suffix": "mA",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "output",
                         "field": "max_i_pos"
@@ -100,6 +103,7 @@
                         2000
                      ],
                      "suffix": "mA",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "output",
                         "field": "max_i_neg"
@@ -117,6 +121,7 @@
                      ],
                      "siPrefix": true,
                      "suffix": "V",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "output",
                         "field": "max_v"
@@ -142,6 +147,7 @@
                   100
                ],
                "format": "{value:.4f} °C",
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "b-p",
                   "field": "t0"
@@ -155,6 +161,7 @@
                "step": 1,
                "siPrefix": true,
                "suffix": "Ω",
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "b-p",
                   "field": "r0"
@@ -168,6 +175,7 @@
                "step": 1,
                "suffix": "K",
                "decimals": 4,
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "b-p",
                   "field": "b"
@@ -203,6 +211,7 @@
                "type": "float",
                "step": 0.1,
                "suffix": "",
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "pid",
                   "field": "kp"
@@ -214,6 +223,7 @@
                "type": "float",
                "step": 0.1,
                "suffix": "Hz",
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "pid",
                   "field": "ki"
@@ -225,6 +235,7 @@
                "type": "float",
                "step": 0.1,
                "suffix": "s",
+               "compactHeight": false,
                "thermostat:set_param": {
                   "topic": "pid",
                   "field": "kd"
@@ -246,6 +257,7 @@
                      ],
                      "decimals": 6,
                      "suffix": "mA",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "pid",
                         "field": "output_min"
@@ -262,6 +274,7 @@
                      ],
                      "decimals": 6,
                      "suffix": "mA",
+                     "compactHeight": false,
                      "thermostat:set_param": {
                         "topic": "pid",
                         "field": "output_max"
@@ -281,6 +294,7 @@
                      "value": 20,
                      "step": 0.1,
                      "format": "{value:.4f} °C",
+                     "compactHeight": false,
                      "pid_autotune": "target_temp"
                   },
                   {
@@ -294,6 +308,7 @@
                         2000
                      ],
                      "suffix": "mA",
+                     "compactHeight": false,
                      "pid_autotune": "test_current"
                   },
                   {
@@ -303,6 +318,7 @@
                      "step": 0.1,
                      "prefix": "±",
                      "format": "{value:.4f} °C",
+                     "compactHeight": false,
                      "pid_autotune": "temp_swing"
                   },
                   {
@@ -311,6 +327,7 @@
                      "value": 3.0,
                      "step": 0.1,
                      "format": "{value:.4f} s",
+                     "compactHeight": false,
                      "pid_autotune": "lookback"
                   },
                   {
