@@ -23,7 +23,7 @@ cargo build --release
 
 The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`.
 
-Alternatively, you can install the Rust toolchain without Nix using rustup; see the Rust manifest file pulled in `flake.nix` to determine which Rust version to use.
+Alternatively, you can install the Rust toolchain without Nix using rustup; see the `rust` variable in `flake.nix` to determine which Rust version to use.
 
 ## Debugging
 
