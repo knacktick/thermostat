@@ -1,17 +1,20 @@
 {
    "ctrl_panel": [
       {
-         "name": "Readings",
+         "name": "readings",
+         "title": "Readings",
          "type": "group",
          "children": [
             {
-               "name": "Temperature",
+               "name": "temperature",
+               "title": "Temperature",
                "type": "float",
                "format": "{value:.4f} °C",
                "readonly": true
             },
             {
-               "name": "Current through TEC",
+               "name": "tec_i",
+               "title": "Current through TEC",
                "type": "float",
                "suffix": "mA",
                "decimals": 6,
@@ -20,25 +23,28 @@
          ]
       },
       {
-         "name": "Output Settings",
+         "name": "output",
+         "title": "Output Settings",
          "expanded": true,
          "type": "group",
          "children": [
             {
-               "name": "Control Method",
+               "name": "control_method",
+               "title": "Control Method",
                "type": "mutex",
-               "limits": [
-                  "Constant Current",
-                  "Temperature PID"
-               ],
-               "value": "Constant Current",
+               "limits": {
+                  "Constant Current": "constant_current",
+                  "Temperature PID": "temperature_pid"
+               },
+               "value": "constant_current",
                "thermostat:set_param": {
                   "topic": "output",
                   "field": "pid"
                },
                "children": [
                   {
-                     "name": "Set Current",
+                     "name": "i_set",
+                     "title": "Set Current",
                      "type": "float",
                      "value": 0,
                      "step": 100,
@@ -57,7 +63,8 @@
                      "lock": false
                   },
                   {
-                     "name": "Set Temperature",
+                     "name": "target",
+                     "title": "Set Temperature",
                      "type": "float",
                      "value": 25,
                      "step": 0.1,
@@ -76,12 +83,14 @@
                ]
             },
             {
-               "name": "Limits",
+               "name": "limits",
+               "title": "Limits",
                "expanded": true,
                "type": "group",
                "children": [
                   {
-                     "name": "Max Cooling Current",
+                     "name": "max_i_pos",
+                     "title": "Max Cooling Current",
                      "type": "float",
                      "value": 0,
                      "step": 100,
@@ -99,7 +108,8 @@
                      "lock": false
                   },
                   {
-                     "name": "Max Heating Current",
+                     "name": "max_i_neg",
+                     "title": "Max Heating Current",
                      "type": "float",
                      "value": 0,
                      "step": 100,
@@ -117,7 +127,8 @@
                      "lock": false
                   },
                   {
-                     "name": "Max Voltage Difference",
+                     "name": "max_v",
+                     "title": "Max Voltage Difference",
                      "type": "float",
                      "value": 0,
                      "step": 0.1,
@@ -139,13 +150,15 @@
          ]
       },
       {
-         "name": "Thermistor Settings",
+         "name": "thermistor",
+         "title": "Thermistor Settings",
          "expanded": true,
          "type": "group",
          "tip": "Settings of the connected Thermistor",
          "children": [
             {
-               "name": "T₀",
+               "name": "t0",
+               "title": "T₀",
                "type": "float",
                "value": 25,
                "step": 0.1,
@@ -162,7 +175,8 @@
                "lock": false
             },
             {
-               "name": "R₀",
+               "name": "r0",
+               "title": "R₀",
                "type": "float",
                "value": 10000,
                "step": 1,
@@ -177,7 +191,8 @@
                "lock": false
             },
             {
-               "name": "B",
+               "name": "b",
+               "title": "B",
                "type": "float",
                "value": 3950,
                "step": 1,
@@ -191,7 +206,8 @@
                "lock": false
             },
             {
-               "name": "Postfilter Rate",
+               "name": "rate",
+               "title": "Postfilter Rate",
                "type": "list",
                "value": 16.67,
                "thermostat:set_param": {
@@ -210,12 +226,14 @@
          ]
       },
       {
-         "name": "PID Settings",
+         "name": "pid",
+         "title": "PID Settings",
          "expanded": true,
          "type": "group",
          "children": [
             {
-               "name": "Kp",
+               "name": "kp",
+               "title": "Kp",
                "type": "float",
                "step": 0.1,
                "suffix": "",
@@ -227,7 +245,8 @@
                "lock": false
             },
             {
-               "name": "Ki",
+               "name": "ki",
+               "title": "Ki",
                "type": "float",
                "step": 0.1,
                "suffix": "Hz",
@@ -239,7 +258,8 @@
                "lock": false
             },
             {
-               "name": "Kd",
+               "name": "kd",
+               "title": "Kd",
                "type": "float",
                "step": 0.1,
                "suffix": "s",
@@ -251,12 +271,14 @@
                "lock": false
             },
             {
-               "name": "PID Output Clamping",
+               "name": "pid_output_clamping",
+               "title": "PID Output Clamping",
                "expanded": true,
                "type": "group",
                "children": [
                   {
-                     "name": "Minimum",
+                     "name": "output_min",
+                     "title": "Minimum",
                      "type": "float",
                      "step": 100,
                      "limits": [
@@ -273,7 +295,8 @@
                      "lock": false
                   },
                   {
-                     "name": "Maximum",
+                     "name": "output_max",
+                     "title": "Maximum",
                      "type": "float",
                      "step": 100,
                      "limits": [
@@ -292,12 +315,14 @@
                ]
             },
             {
-               "name": "PID Auto Tune",
+               "name": "pid_autotune",
+               "title": "PID Auto Tune",
                "expanded": false,
                "type": "group",
                "children": [
                   {
-                     "name": "Target Temperature",
+                     "name": "target_temp",
+                     "title": "Target Temperature",
                      "type": "float",
                      "value": 20,
                      "step": 0.1,
@@ -306,7 +331,8 @@
                      "pid_autotune": "target_temp"
                   },
                   {
-                     "name": "Test Current",
+                     "name": "test_current",
+                     "title": "Test Current",
                      "type": "float",
                      "value": 0,
                      "decimals": 6,
@@ -320,7 +346,8 @@
                      "pid_autotune": "test_current"
                   },
                   {
-                     "name": "Temperature Swing",
+                     "name": "temp_swing",
+                     "title": "Temperature Swing",
                      "type": "float",
                      "value": 1.5,
                      "step": 0.1,
@@ -330,7 +357,8 @@
                      "pid_autotune": "temp_swing"
                   },
                   {
-                     "name": "Lookback",
+                     "name": "lookback",
+                     "title": "Lookback",
                      "type": "float",
                      "value": 3.0,
                      "step": 0.1,
@@ -339,7 +367,8 @@
                      "pid_autotune": "lookback"
                   },
                   {
-                     "name": "Run",
+                     "name": "run_pid",
+                     "title": "Run",
                      "type": "action",
                      "tip": "Run"
                   }
@@ -348,12 +377,14 @@
          ]
       },
       {
-         "name": "Save to flash",
+         "name": "save",
+         "title": "Save to flash",
          "type": "action",
          "tip": "Save settings to thermostat, applies on reset"
       },
       {
-         "name": "Load from flash",
+         "name": "load",
+         "title": "Load from flash",
          "type": "action",
          "tip": "Load settings from flash"
       }
