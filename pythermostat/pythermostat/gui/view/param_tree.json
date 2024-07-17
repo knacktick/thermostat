@@ -166,6 +166,7 @@
                "type": "float",
                "value": 10000,
                "step": 1,
+               "min": 0,
                "siPrefix": true,
                "suffix": "Ω",
                "compactHeight": false,
@@ -311,7 +312,7 @@
                      "decimals": 6,
                      "step": 100,
                      "limits": [
-                        -2000,
+                        0,
                         2000
                      ],
                      "suffix": "mA",
