@@ -1,17 +1,23 @@
 {
    "ctrl_panel": [
       {
-         "name": "Temperature",
-         "type": "float",
-         "format": "{value:.4f} °C",
-         "readonly": true
-      },
-      {
-         "name": "Current through TEC",
-         "type": "float",
-         "suffix": "mA",
-         "decimals": 6,
-         "readonly": true
+         "name": "Readings",
+         "type": "group",
+         "children": [
+            {
+               "name": "Temperature",
+               "type": "float",
+               "format": "{value:.4f} °C",
+               "readonly": true
+            },
+            {
+               "name": "Current through TEC",
+               "type": "float",
+               "suffix": "mA",
+               "decimals": 6,
+               "readonly": true
+            }
+         ]
       },
       {
          "name": "Output Config",

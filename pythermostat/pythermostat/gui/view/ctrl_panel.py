@@ -201,13 +201,13 @@ class CtrlPanel(QObject):
                     "Output Config", "Control Method", "Set Current"
                 ).setValue(settings["i_set"] * 1000)
                 if settings["temperature"] is not None:
-                    self.params[channel].child("Temperature").setValue(
+                    self.params[channel].child("Readings", "Temperature").setValue(
                         settings["temperature"]
                     )
                     if settings["tec_i"] is not None:
-                        self.params[channel].child("Current through TEC").setValue(
-                            settings["tec_i"] * 1000
-                        )
+                        self.params[channel].child(
+                            "Readings", "Current through TEC"
+                        ).setValue(settings["tec_i"] * 1000)
 
     @pyqtSlot(list)
     def update_thermistor(self, sh_data):
