@@ -1,7 +1,7 @@
 {
   description = "Firmware for the Sinara 8451 Thermostat";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-23.05;
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   inputs.rust-overlay = { 
     url = "github:oxalica/rust-overlay";
     inputs.nixpkgs.follows = "nixpkgs";
@@ -47,6 +47,7 @@
         '';
 
         dontFixup = true;
+        auditable = false;
       };
     in {
       packages.x86_64-linux = {
