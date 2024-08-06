@@ -58,9 +58,9 @@
         inherit thermostat;
       };
 
-      devShells.x86_64-linux.default = pkgs.mkShell {
+      devShells.x86_64-linux.default = pkgs.mkShellNoCC {
         name = "thermostat-dev-shell";
-        buildInputs = with pkgs; [
+        packages = with pkgs; [
           rust openocd dfu-util
           ] ++ (with python3Packages; [
             numpy matplotlib
