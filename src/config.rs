@@ -6,11 +6,7 @@ use crate::{
 };
 use num_traits::Zero;
 use serde::{Deserialize, Serialize};
-use uom::si::{
-    electric_current::ampere,
-    electric_potential::volt,
-    f64::{ElectricCurrent, ElectricPotential},
-};
+use uom::si::f64::{ElectricCurrent, ElectricPotential};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelConfig {
@@ -77,9 +73,9 @@ impl ChannelConfig {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PwmLimits {
-    pub max_v: f64,
-    pub max_i_pos: f64,
-    pub max_i_neg: f64,
+    pub max_v: ElectricPotential,
+    pub max_i_pos: ElectricCurrent,
+    pub max_i_neg: ElectricCurrent,
 }
 
 impl PwmLimits {
@@ -88,15 +84,15 @@ impl PwmLimits {
         let max_i_pos = channels.get_max_i_pos(channel);
         let max_i_neg = channels.get_max_i_neg(channel);
         PwmLimits {
-            max_v: max_v.get::<volt>(),
-            max_i_pos: max_i_pos.get::<ampere>(),
-            max_i_neg: max_i_neg.get::<ampere>(),
+            max_v,
+            max_i_pos,
+            max_i_neg,
         }
     }
 
     pub fn apply(&self, channels: &mut Channels, channel: usize) {
-        channels.set_max_v(channel, ElectricPotential::new::<volt>(self.max_v));
-        channels.set_max_i_pos(channel, ElectricCurrent::new::<ampere>(self.max_i_pos));
-        channels.set_max_i_neg(channel, ElectricCurrent::new::<ampere>(self.max_i_neg));
+        channels.set_max_v(channel, self.max_v);
+        channels.set_max_i_pos(channel, self.max_i_pos);
+        channels.set_max_i_neg(channel, self.max_i_neg);
     }
 }

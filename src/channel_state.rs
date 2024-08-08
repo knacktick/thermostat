@@ -4,6 +4,7 @@ use crate::{
     config::PwmLimits,
     pid, steinhart_hart as sh,
 };
+use num_traits::Zero;
 use smoltcp::time::{Duration, Instant};
 use uom::si::{
     electric_current::ampere,
@@ -47,9 +48,9 @@ impl ChannelState {
             dac_value: ElectricPotential::new::<volt>(0.0),
             i_set: ElectricCurrent::new::<ampere>(0.0),
             pwm_limits: PwmLimits {
-                max_v: 0.0,
-                max_i_pos: 0.0,
-                max_i_neg: 0.0,
+                max_v: ElectricPotential::zero(),
+                max_i_pos: ElectricCurrent::zero(),
+                max_i_neg: ElectricCurrent::zero(),
             },
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),

@@ -364,15 +364,15 @@ impl Channels {
     }
 
     pub fn get_max_v(&mut self, channel: usize) -> ElectricPotential {
-        ElectricPotential::new::<volt>(self.channel_state(channel).pwm_limits.max_v)
+        self.channel_state(channel).pwm_limits.max_v
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> ElectricCurrent {
-        ElectricCurrent::new::<ampere>(self.channel_state(channel).pwm_limits.max_i_pos)
+        self.channel_state(channel).pwm_limits.max_i_pos
     }
 
     pub fn get_max_i_neg(&mut self, channel: usize) -> ElectricCurrent {
-        ElectricCurrent::new::<ampere>(self.channel_state(channel).pwm_limits.max_i_neg)
+        self.channel_state(channel).pwm_limits.max_i_neg
     }
 
     // Get current passing through TEC
@@ -420,7 +420,7 @@ impl Channels {
         let max_v = max_v.min(MAX_TEC_V).max(ElectricPotential::zero());
         let duty = (max_v / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
-        self.channel_state(channel).pwm_limits.max_v = max_v.get::<volt>();
+        self.channel_state(channel).pwm_limits.max_v = max_v;
         (duty * max, max)
     }
 
@@ -436,7 +436,7 @@ impl Channels {
             Polarity::Normal => self.set_pwm(channel, PwmPin::MaxIPos, duty),
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxINeg, duty),
         };
-        self.channel_state(channel).pwm_limits.max_i_pos = max_i_pos.get::<ampere>();
+        self.channel_state(channel).pwm_limits.max_i_pos = max_i_pos;
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
@@ -452,7 +452,7 @@ impl Channels {
             Polarity::Normal => self.set_pwm(channel, PwmPin::MaxINeg, duty),
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxIPos, duty),
         };
-        self.channel_state(channel).pwm_limits.max_i_neg = max_i_neg.get::<ampere>();
+        self.channel_state(channel).pwm_limits.max_i_neg = max_i_neg;
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
