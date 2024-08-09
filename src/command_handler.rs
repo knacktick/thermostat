@@ -206,7 +206,7 @@ impl Handler {
         channel: usize,
         center: CenterPoint,
     ) -> Result<Handler, Error> {
-        let i_set = channels.get_i(channel);
+        let i_set = channels.get_i_set(channel);
         let state = channels.channel_state(channel);
         state.center = center;
         if !state.pid_engaged {

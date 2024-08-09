@@ -144,7 +144,7 @@ impl Channels {
         voltage
     }
 
-    pub fn get_i(&mut self, channel: usize) -> ElectricCurrent {
+    pub fn get_i_set(&mut self, channel: usize) -> ElectricCurrent {
         let i_set = self.channel_state(channel).i_set;
         i_set
     }
@@ -470,7 +470,7 @@ impl Channels {
     }
 
     fn report(&mut self, channel: usize) -> Report {
-        let i_set = self.get_i(channel);
+        let i_set = self.get_i_set(channel);
         let i_tec = self.adc_read(channel, PinsAdcReadTarget::ITec, 16);
         let tec_i = self.get_tec_i(channel);
         let dac_value = self.get_dac(channel);
@@ -525,7 +525,7 @@ impl Channels {
         OutputSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
-            i_set: self.get_i(channel),
+            i_set: self.get_i_set(channel),
             max_v: self.get_max_v(channel),
             max_i_pos: self.get_max_i_pos(channel),
             max_i_neg: self.get_max_i_neg(channel),
