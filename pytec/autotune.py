@@ -253,9 +253,9 @@ def main():
 
         tuner_out = tuner.output()
 
-        tec.set_param("pwm", channel, "i_set", tuner_out)
+        tec.set_param("output", channel, "i_set", tuner_out)
 
-    tec.set_param("pwm", channel, "i_set", 0)
+    tec.set_param("output", channel, "i_set", 0)
 
 
 if __name__ == "__main__":

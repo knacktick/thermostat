@@ -521,8 +521,8 @@ impl Channels {
         false
     }
 
-    fn pwm_summary(&mut self, channel: usize) -> PwmSummary {
-        PwmSummary {
+    fn output_summary(&mut self, channel: usize) -> OutputSummary {
+        OutputSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
             i_set: self.get_i(channel),
@@ -533,10 +533,10 @@ impl Channels {
         }
     }
 
-    pub fn pwm_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+    pub fn output_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
         let mut summaries = Vec::<_, U2>::new();
         for channel in 0..CHANNELS {
-            let _ = summaries.push(self.pwm_summary(channel));
+            let _ = summaries.push(self.output_summary(channel));
         }
         serde_json_core::to_vec(&summaries)
     }
@@ -630,7 +630,7 @@ impl Serialize for PolarityJson {
 }
 
 #[derive(Serialize)]
-pub struct PwmSummary {
+pub struct OutputSummary {
     channel: usize,
     center: CenterPointJson,
     i_set: ElectricCurrent,

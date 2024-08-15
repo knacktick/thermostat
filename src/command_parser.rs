@@ -91,7 +91,7 @@ pub struct Ipv4Config {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShowCommand {
     Input,
-    Pwm,
+    Output,
     Pid,
     SteinhartHart,
     PostFilter,
@@ -149,16 +149,16 @@ pub enum Command {
     Ipv4(Ipv4Config),
     Show(ShowCommand),
     /// PWM parameter setting
-    Pwm {
+    Output {
         channel: usize,
         pin: PwmPin,
         value: f64,
     },
     /// Enable PID control for `i_set`
-    PwmPid {
+    OutputPid {
         channel: usize,
     },
-    PwmPolarity {
+    OutputPolarity {
         channel: usize,
         polarity: Polarity,
     },
@@ -260,12 +260,12 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
     ))(input)
 }
 
-/// `pwm <0-1> pid` - Set PWM to be controlled by PID
-fn pwm_pid(input: &[u8]) -> IResult<&[u8], ()> {
+/// `output <0-1> pid` - Set output to be controlled by PID
+fn output_pid(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag("pid"))(input)
 }
 
-fn pwm_polarity(input: &[u8]) -> IResult<&[u8], Polarity> {
+fn output_polarity(input: &[u8]) -> IResult<&[u8], Polarity> {
     preceded(
         tag("polarity"),
         preceded(
@@ -278,8 +278,8 @@ fn pwm_polarity(input: &[u8]) -> IResult<&[u8], Polarity> {
     )(input)
 }
 
-fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-    let (input, _) = tag("pwm")(input)?;
+fn output(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("output")(input)?;
     alt((
         |input| {
             let (input, _) = whitespace(input)?;
@@ -287,19 +287,19 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             let (input, _) = whitespace(input)?;
             let (input, result) = alt((
                 |input| {
-                    let (input, ()) = pwm_pid(input)?;
-                    Ok((input, Ok(Command::PwmPid { channel })))
+                    let (input, ()) = output_pid(input)?;
+                    Ok((input, Ok(Command::OutputPid { channel })))
                 },
                 |input| {
-                    let (input, polarity) = pwm_polarity(input)?;
-                    Ok((input, Ok(Command::PwmPolarity { channel, polarity })))
+                    let (input, polarity) = output_polarity(input)?;
+                    Ok((input, Ok(Command::OutputPolarity { channel, polarity })))
                 },
                 |input| {
                     let (input, config) = pwm_setup(input)?;
                     match config {
                         Ok((pin, value)) => Ok((
                             input,
-                            Ok(Command::Pwm {
+                            Ok(Command::Output {
                                 channel,
                                 pin,
                                 value,
@@ -312,7 +312,7 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             end(input)?;
             Ok((input, result))
         },
-        value(Ok(Command::Show(ShowCommand::Pwm)), end),
+        value(Ok(Command::Show(ShowCommand::Output)), end),
     ))(input)
 }
 
@@ -569,7 +569,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
         value(Ok(Command::Reset), tag("reset")),
         ipv4,
         map(report, Ok),
-        pwm,
+        output,
         center_point,
         pid,
         steinhart_hart,
@@ -664,11 +664,11 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_i_set() {
-        let command = Command::parse(b"pwm 1 i_set 16383");
+    fn parse_output_i_set() {
+        let command = Command::parse(b"output 1 i_set 16383");
         assert_eq!(
             command,
-            Ok(Command::Pwm {
+            Ok(Command::Output {
                 channel: 1,
                 pin: PwmPin::ISet,
                 value: 16383.0,
@@ -677,11 +677,11 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_polarity() {
+    fn parse_output_polarity() {
         let command = Command::parse(b"pwm 0 polarity reversed");
         assert_eq!(
             command,
-            Ok(Command::PwmPolarity {
+            Ok(Command::OutputPolarity {
                 channel: 0,
                 polarity: Polarity::Reversed,
             })
@@ -689,17 +689,17 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_pid() {
-        let command = Command::parse(b"pwm 0 pid");
-        assert_eq!(command, Ok(Command::PwmPid { channel: 0 }));
+    fn parse_output_pid() {
+        let command = Command::parse(b"output 0 pid");
+        assert_eq!(command, Ok(Command::OutputPid { channel: 0 }));
     }
 
     #[test]
-    fn parse_pwm_max_i_pos() {
-        let command = Command::parse(b"pwm 0 max_i_pos 7");
+    fn parse_output_max_i_pos() {
+        let command = Command::parse(b"output 0 max_i_pos 7");
         assert_eq!(
             command,
-            Ok(Command::Pwm {
+            Ok(Command::Output {
                 channel: 0,
                 pin: PwmPin::MaxIPos,
                 value: 7.0,
@@ -708,11 +708,11 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_max_i_neg() {
-        let command = Command::parse(b"pwm 0 max_i_neg 128");
+    fn parse_output_max_i_neg() {
+        let command = Command::parse(b"output 0 max_i_neg 128");
         assert_eq!(
             command,
-            Ok(Command::Pwm {
+            Ok(Command::Output {
                 channel: 0,
                 pin: PwmPin::MaxINeg,
                 value: 128.0,
@@ -721,11 +721,11 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_max_v() {
-        let command = Command::parse(b"pwm 0 max_v 32768");
+    fn parse_output_max_v() {
+        let command = Command::parse(b"output 0 max_v 32768");
         assert_eq!(
             command,
-            Ok(Command::Pwm {
+            Ok(Command::Output {
                 channel: 0,
                 pin: PwmPin::MaxV,
                 value: 32768.0,

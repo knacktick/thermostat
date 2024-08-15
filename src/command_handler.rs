@@ -96,7 +96,7 @@ impl Handler {
     }
 
     fn show_pwm(socket: &mut TcpSocket, channels: &mut Channels) -> Result<Handler, Error> {
-        match channels.pwm_summaries_json() {
+        match channels.output_summaries_json() {
             Ok(buf) => {
                 send_line(socket, &buf);
             }
@@ -475,17 +475,17 @@ impl Handler {
             Command::Quit => Ok(Handler::CloseSocket),
             Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),
             Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),
-            Command::Show(ShowCommand::Pwm) => Handler::show_pwm(socket, channels),
+            Command::Show(ShowCommand::Output) => Handler::show_pwm(socket, channels),
             Command::Show(ShowCommand::SteinhartHart) => {
                 Handler::show_steinhart_hart(socket, channels)
             }
             Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
-            Command::PwmPid { channel } => Handler::engage_pid(socket, channels, channel),
-            Command::PwmPolarity { channel, polarity } => {
+            Command::OutputPid { channel } => Handler::engage_pid(socket, channels, channel),
+            Command::OutputPolarity { channel, polarity } => {
                 Handler::set_polarity(socket, channels, channel, polarity)
             }
-            Command::Pwm {
+            Command::Output {
                 channel,
                 pin,
                 value,

@@ -13,11 +13,11 @@ class Client:
         self._check_zero_limits()
 
     def _check_zero_limits(self):
-        pwm_report = self.get_pwm()
-        for pwm_channel in pwm_report:
+        output_report = self.get_output()
+        for output_channel in output_report:
             for limit in ["max_i_neg", "max_i_pos", "max_v"]:
-                if pwm_channel[limit] == 0.0:
-                    logging.warning("`{}` limit is set to zero on channel {}".format(limit, pwm_channel["channel"]))
+                if output_channel[limit] == 0.0:
+                    logging.warning("`{}` limit is set to zero on channel {}".format(limit, output_channel["channel"]))
 
     def _read_line(self):
         # read more lines
@@ -47,8 +47,8 @@ class Client:
             result[int(item["channel"])] = item
         return result
 
-    def get_pwm(self):
-        """Retrieve PWM limits for the TEC
+    def get_output(self):
+        """Retrieve output limits for the TEC
 
         Example::
             [{'channel': 0,
@@ -67,7 +67,7 @@ class Client:
               'polarity': 'normal',
             ]
         """
-        return self._get_conf("pwm")
+        return self._get_conf("output")
 
     def get_pid(self):
         """Retrieve PID control state
@@ -144,7 +144,7 @@ class Client:
         """Set configuration parameters
 
         Examples::
-            tec.set_param("pwm", 0, "max_v", 2.0)
+            tec.set_param("output", 0, "max_v", 2.0)
             tec.set_param("pid", 1, "output_max", 2.5)
             tec.set_param("s-h", 0, "t0", 20.0)
             tec.set_param("center", 0, "vref")
@@ -161,7 +161,7 @@ class Client:
     def power_up(self, channel, target):
         """Start closed-loop mode"""
         self.set_param("pid", channel, "target", value=target)
-        self.set_param("pwm", channel, "pid")
+        self.set_param("output", channel, "pid")
 
     def save_config(self):
         """Save current configuration to EEPROM"""
