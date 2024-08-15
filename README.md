@@ -269,7 +269,7 @@ with the following keys.
 | `tec_u_meas`   | Volts           | Measurement of the voltage across the TEC            |
 | `pid_output`   | Amperes         | PID control output                                   |
 
-Note: With Thermostat v2 and below, the voltage and current readouts `i_tec` and `tec_i` are noisy without the hardware fix shown in [this PR][https://git.m-labs.hk/M-Labs/thermostat/pulls/105].
+Note: Prior to Thermostat hardware revision v2.2.4, the voltage and current readouts `i_tec` and `tec_i` are noisy without the hardware fix shown in [this PR](https://git.m-labs.hk/M-Labs/thermostat/pulls/105).
 
 ## PID Tuning
 
