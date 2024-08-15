@@ -189,7 +189,7 @@ Testing heat flow direction with a low set current is recommended before install
 
 ### Limits
 
-Each of the MAX1968 TEC driver has analog/PWM inputs for setting
+Each MAX1968 TEC driver has analog/PWM inputs for setting
 output limits.
 
 Use the `pwm` command to see current settings and maximum values.
@@ -218,7 +218,7 @@ pwm 0 max_i_pos 3
 
 ### Open-loop mode
 
-To manually control TEC output current, omit the limit parameter of
+To manually control TEC output current, set a fixed output current with
 the `pwm` command. Doing so will disengage the PID control for that
 channel.
 
