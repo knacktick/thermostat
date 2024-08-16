@@ -83,9 +83,9 @@ struct PwmLimits {
 
 impl PwmLimits {
     pub fn new(channels: &mut Channels, channel: usize) -> Self {
-        let (max_v, _) = channels.get_max_v(channel);
-        let (max_i_pos, _) = channels.get_max_i_pos(channel);
-        let (max_i_neg, _) = channels.get_max_i_neg(channel);
+        let max_v = channels.get_max_v(channel);
+        let max_i_pos = channels.get_max_i_pos(channel);
+        let max_i_neg = channels.get_max_i_neg(channel);
         PwmLimits {
             max_v: max_v.get::<volt>(),
             max_i_pos: max_i_pos.get::<ampere>(),

@@ -383,26 +383,26 @@ impl Channels {
         }
     }
 
-    pub fn get_max_v(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
+    pub fn get_max_v(&mut self, channel: usize) -> ElectricPotential {
         let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let duty = self.get_pwm(channel, PwmPin::MaxV);
-        (duty * max, MAX_TEC_V)
+        duty * max
     }
 
-    pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+    pub fn get_max_i_pos(&mut self, channel: usize) -> ElectricCurrent {
         let duty = match self.channel_state(channel).polarity {
             Polarity::Normal => self.get_pwm(channel, PwmPin::MaxIPos),
             Polarity::Reversed => self.get_pwm(channel, PwmPin::MaxINeg),
         };
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
+        duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE
     }
 
-    pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+    pub fn get_max_i_neg(&mut self, channel: usize) -> ElectricCurrent {
         let duty = match self.channel_state(channel).polarity {
             Polarity::Normal => self.get_pwm(channel, PwmPin::MaxINeg),
             Polarity::Reversed => self.get_pwm(channel, PwmPin::MaxIPos),
         };
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
+        duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE
     }
 
     // Get current passing through TEC
@@ -476,8 +476,8 @@ impl Channels {
     pub fn set_polarity(&mut self, channel: usize, polarity: Polarity) {
         if self.channel_state(channel).polarity != polarity {
             let i_set = self.channel_state(channel).i_set;
-            let max_i_pos = self.get_max_i_pos(channel).0;
-            let max_i_neg = self.get_max_i_neg(channel).0;
+            let max_i_pos = self.get_max_i_pos(channel);
+            let max_i_neg = self.get_max_i_neg(channel);
             self.channel_state(channel).polarity = polarity;
 
             self.set_i(channel, i_set);
@@ -541,10 +541,10 @@ impl Channels {
         PwmSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
-            i_set: (self.get_i(channel), MAX_TEC_I).into(),
-            max_v: self.get_max_v(channel).into(),
-            max_i_pos: self.get_max_i_pos(channel).into(),
-            max_i_neg: self.get_max_i_neg(channel).into(),
+            i_set: self.get_i(channel),
+            max_v: self.get_max_v(channel),
+            max_i_pos: self.get_max_i_pos(channel),
+            max_i_neg: self.get_max_i_neg(channel),
             polarity: PolarityJson(self.channel_state(channel).polarity.clone()),
         }
     }
@@ -643,25 +643,13 @@ impl Serialize for PolarityJson {
 }
 
 #[derive(Serialize)]
-pub struct PwmSummaryField<T: Serialize> {
-    value: T,
-    max: T,
-}
-
-impl<T: Serialize> From<(T, T)> for PwmSummaryField<T> {
-    fn from((value, max): (T, T)) -> Self {
-        PwmSummaryField { value, max }
-    }
-}
-
-#[derive(Serialize)]
 pub struct PwmSummary {
     channel: usize,
     center: CenterPointJson,
-    i_set: PwmSummaryField<ElectricCurrent>,
-    max_v: PwmSummaryField<ElectricPotential>,
-    max_i_pos: PwmSummaryField<ElectricCurrent>,
-    max_i_neg: PwmSummaryField<ElectricCurrent>,
+    i_set: ElectricCurrent,
+    max_v: ElectricPotential,
+    max_i_pos: ElectricCurrent,
+    max_i_neg: ElectricCurrent,
     polarity: PolarityJson,
 }
 

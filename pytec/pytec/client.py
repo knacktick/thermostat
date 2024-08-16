@@ -16,7 +16,7 @@ class Client:
         pwm_report = self.get_pwm()
         for pwm_channel in pwm_report:
             for limit in ["max_i_neg", "max_i_pos", "max_v"]:
-                if pwm_channel[limit]["value"] == 0.0:
+                if pwm_channel[limit] == 0.0:
                     logging.warning("`{}` limit is set to zero on channel {}".format(limit, pwm_channel["channel"]))
 
     def _read_line(self):
@@ -53,17 +53,17 @@ class Client:
         Example::
             [{'channel': 0,
               'center': 'vref',
-              'i_set': {'max': 2.9802790335151985, 'value': -0.02002179650216762},
-              'max_i_neg': {'max': 3.0, 'value': 3.0},
-              'max_v': {'max': 5.988, 'value': 5.988},
-              'max_i_pos': {'max': 3.0, 'value': 3.0}},
+              'i_set': -0.02002179650216762,
+              'max_i_neg': 2.0,
+              'max_v': 3.988,
+              'max_i_pos': 2.0,
               'polarity': 'normal',
              {'channel': 1,
               'center': 'vref',
-              'i_set': {'max': 2.9802790335151985, 'value': -0.02002179650216762},
-              'max_i_neg': {'max': 3.0, 'value': 3.0},
-              'max_v': {'max': 5.988, 'value': 5.988},
-              'max_i_pos': {'max': 3.0, 'value': 3.0}}
+              'i_set': -0.02002179650216762,
+              'max_i_neg': 2.0,
+              'max_v': 3.988,
+              'max_i_pos': 2.0}
               'polarity': 'normal',
             ]
         """
