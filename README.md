@@ -98,10 +98,10 @@ formatted as line-delimited JSON.
 | `report mode`                              | Show current report mode                                                      |
 | `report mode <off/on>`                     | Set report mode                                                               |
 | `pwm`                                      | Show current PWM settings                                                     |
-| `pwm <0/1> max_i_pos <amp>`                | Set maximum positive output current                                           |
-| `pwm <0/1> max_i_neg <amp>`                | Set maximum negative output current                                           |
-| `pwm <0/1> max_v <volt>`                   | Set maximum output voltage                                                    |
-| `pwm <0/1> i_set <amp>`                    | Disengage PID, set fixed output current                                       |
+| `pwm <0/1> max_i_pos <amp>`                | Set maximum positive output current, clamped to [0, 2]                        |
+| `pwm <0/1> max_i_neg <amp>`                | Set maximum negative output current, clamped to [0, 2]                        |
+| `pwm <0/1> max_v <volt>`                   | Set maximum output voltage, clamped to [0, 4]                                 |
+| `pwm <0/1> i_set <amp>`                    | Disengage PID, set fixed output current, clamped to [-2, 2]                   |
 | `pwm <0/1> polarity <normal/reversed>`     | Set output current polarity, with 'normal' being the front panel polarity     |
 | `pwm <0/1> pid`                            | Let output current to be controlled by the PID                                |
 | `center <0/1> <volt>`                      | Set the MAX1968 0A-centerpoint to the specified fixed voltage                 |
