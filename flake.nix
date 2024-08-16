@@ -63,7 +63,7 @@
         name = "thermostat-dev-shell";
         packages = with pkgs; [
           rust llvm
-          openocd dfu-util
+          openocd dfu-util rlwrap
           ] ++ (with python3Packages; [
             numpy matplotlib
           ]);
