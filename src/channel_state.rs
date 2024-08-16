@@ -16,6 +16,7 @@ use uom::si::{
 use crate::{
     ad7172,
     pid,
+    config::PwmLimits,
     steinhart_hart as sh,
     command_parser::{CenterPoint, Polarity},
 };
@@ -32,6 +33,7 @@ pub struct ChannelState {
     pub center: CenterPoint,
     pub dac_value: ElectricPotential,
     pub i_set: ElectricCurrent,
+    pub pwm_limits: PwmLimits,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
@@ -49,6 +51,11 @@ impl ChannelState {
             center: CenterPoint::Vref,
             dac_value: ElectricPotential::new::<volt>(0.0),
             i_set: ElectricCurrent::new::<ampere>(0.0),
+            pwm_limits: PwmLimits {
+                max_v: 0.0,
+                max_i_pos: 0.0,
+                max_i_neg: 0.0,
+            },
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),

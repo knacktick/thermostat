@@ -75,10 +75,10 @@ impl ChannelConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-struct PwmLimits {
-    max_v: f64,
-    max_i_pos: f64,
-    max_i_neg: f64,
+pub struct PwmLimits {
+    pub max_v: f64,
+    pub max_i_pos: f64,
+    pub max_i_neg: f64,
 }
 
 impl PwmLimits {
