@@ -8,7 +8,7 @@ use uom::si::{
 use crate::{
     ad7172::PostFilter,
     channels::Channels,
-    command_parser::CenterPoint,
+    command_parser::{CenterPoint, Polarity},
     pid,
     steinhart_hart,
 };
@@ -20,6 +20,7 @@ pub struct ChannelConfig {
     pid_target: f32,
     pid_engaged: bool,
     i_set: ElectricCurrent,
+    polarity: Polarity,
     sh: steinhart_hart::Parameters,
     pwm: PwmLimits,
     /// uses variant `PostFilter::Invalid` instead of `None` to save space
@@ -45,7 +46,8 @@ impl ChannelConfig {
             pid: state.pid.parameters.clone(),
             pid_target: state.pid.target as f32,
             pid_engaged: state.pid_engaged,
-            i_set: i_set,
+            i_set,
+            polarity: state.polarity.clone(),
             sh: state.sh.clone(),
             pwm,
             adc_postfilter,
@@ -68,6 +70,7 @@ impl ChannelConfig {
         };
         let _ = channels.adc.set_postfilter(channel as u8, adc_postfilter);
         let _ = channels.set_i(channel, self.i_set);
+        channels.set_polarity(channel, self.polarity.clone());
     }
 }
 

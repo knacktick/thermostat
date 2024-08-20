@@ -92,40 +92,43 @@ ADC input data is provided in reports. Query for the latest report with the comm
 Send commands as simple text string terminated by `\n`. Responses are
 formatted as line-delimited JSON.
 
-| Syntax                           | Function                                                                      |
-|----------------------------------|-------------------------------------------------------------------------------|
-| `report`                         | Show current input                                                            |
-| `pwm`                            | Show current PWM settings                                                     |
-| `pwm <0/1> max_i_pos <amp>`      | Set maximum positive output current                                           |
-| `pwm <0/1> max_i_neg <amp>`      | Set maximum negative output current                                           |
-| `pwm <0/1> max_v <volt>`         | Set maximum output voltage                                                    |
-| `pwm <0/1> i_set <amp>`          | Disengage PID, set fixed output current                                       |
-| `pwm <0/1> pid`                  | Let output current to be controlled by the PID                                |
-| `center <0/1> <volt>`            | Set the MAX1968 0A-centerpoint to the specified fixed voltage                 |
-| `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF                           |
-| `pid`                            | Show PID configuration                                                        |
-| `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature                                     |
-| `pid <0/1> kp <value>`           | Set proportional gain                                                         |
-| `pid <0/1> ki <value>`           | Set integral gain                                                             |
-| `pid <0/1> kd <value>`           | Set differential gain                                                         |
-| `pid <0/1> output_min <amp>`     | Set mininum output                                                            |
-| `pid <0/1> output_max <amp>`     | Set maximum output                                                            |
-| `s-h`                            | Show Steinhart-Hart equation parameters                                       |
-| `s-h <0/1> <t0/b/r0> <value>`    | Set Steinhart-Hart parameter for a channel                                    |
-| `postfilter`                     | Show postfilter settings                                                      |
-| `postfilter <0/1> off`           | Disable postfilter                                                            |
-| `postfilter <0/1> rate <rate>`   | Set postfilter output data rate                                               |
-| `load [0/1]`                     | Restore configuration for channel all/0/1 from flash                          |
-| `save [0/1]`                     | Save configuration for channel all/0/1 to flash                               |
-| `reset`                          | Reset the device                                                              |
-| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode                 |
-| `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`     | Configure IPv4 address, netmask length, and optional default gateway          |
-| `fan`                            | Show current fan settings and sensors' measurements                           |
-| `fan <value>`                    | Set fan power with values from 1 to 100                                       |
-| `fan auto`                       | Enable automatic fan speed control                                            |
-| `fcurve <a> <b> <c>`             | Set fan controller curve coefficients (see *Fan control* section)             |
-| `fcurve default`                 | Set fan controller curve coefficients to defaults (see *Fan control* section) |
-| `hwrev`                          | Show hardware revision, and settings related to it                            |
+| Syntax                                     | Function                                                                      |
+|------------------------------------------- |-------------------------------------------------------------------------------|
+| `report`                                   | Show current input                                                            |
+| `report mode`                              | Show current report mode                                                      |
+| `report mode <off/on>`                     | Set report mode                                                               |
+| `pwm`                                      | Show current PWM settings                                                     |
+| `pwm <0/1> max_i_pos <amp>`                | Set maximum positive output current                                           |
+| `pwm <0/1> max_i_neg <amp>`                | Set maximum negative output current                                           |
+| `pwm <0/1> max_v <volt>`                   | Set maximum output voltage                                                    |
+| `pwm <0/1> i_set <amp>`                    | Disengage PID, set fixed output current                                       |
+| `pwm <0/1> polarity <normal/reversed>`     | Set output current polarity, with 'normal' being the front panel polarity     |
+| `pwm <0/1> pid`                            | Let output current to be controlled by the PID                                |
+| `center <0/1> <volt>`                      | Set the MAX1968 0A-centerpoint to the specified fixed voltage                 |
+| `center <0/1> vref`                        | Set the MAX1968 0A-centerpoint to measure from VREF                           |
+| `pid`                                      | Show PID configuration                                                        |
+| `pid <0/1> target <deg_celsius>`           | Set the PID controller target temperature                                     |
+| `pid <0/1> kp <value>`                     | Set proportional gain                                                         |
+| `pid <0/1> ki <value>`                     | Set integral gain                                                             |
+| `pid <0/1> kd <value>`                     | Set differential gain                                                         |
+| `pid <0/1> output_min <amp>`               | Set mininum output                                                            |
+| `pid <0/1> output_max <amp>`               | Set maximum output                                                            |
+| `s-h`                                      | Show Steinhart-Hart equation parameters                                       |
+| `s-h <0/1> <t0/b/r0> <value>`              | Set Steinhart-Hart parameter for a channel                                    |
+| `postfilter`                               | Show postfilter settings                                                      |
+| `postfilter <0/1> off`                     | Disable postfilter                                                            |
+| `postfilter <0/1> rate <rate>`             | Set postfilter output data rate                                               |
+| `load [0/1]`                               | Restore configuration for channel all/0/1 from flash                          |
+| `save [0/1]`                               | Save configuration for channel all/0/1 to flash                               |
+| `reset`                                    | Reset the device                                                              |
+| `dfu`                                      | Reset device and enters USB device firmware update (DFU) mode                 |
+| `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`               | Configure IPv4 address, netmask length, and optional default gateway          |
+| `fan`                                      | Show current fan settings and sensors' measurements                           |
+| `fan <value>`                              | Set fan power with values from 1 to 100                                       |
+| `fan auto`                                 | Enable automatic fan speed control                                            |
+| `fcurve <a> <b> <c>`                       | Set fan controller curve coefficients (see *Fan control* section)             |
+| `fcurve default`                           | Set fan controller curve coefficients to defaults (see *Fan control* section) |
+| `hwrev`                                    | Show hardware revision, and settings related to it                            |
 
 
 ## USB
@@ -181,6 +184,8 @@ postfilter rate can be tuned with the `postfilter` command.
 - The GND pin is for shielding not for sinking TEC module currents.
 
 When using a TEC module with the Thermostat, the Thermostat expects the thermal load (where the thermistor is located) to cool down with a positive software current set point, and heat up with a negative current set point.
+
+If the Thermostat is used for temperature control with the Sinara 5432 DAC "Zotino", and is connected via an IDC cable, the TEC polarity may need to be reversed with the `pwm <ch> polarity reversed` TCP command.
 
 Testing heat flow direction with a low set current is recommended before installation of the TEC module.
 

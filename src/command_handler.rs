@@ -11,7 +11,8 @@ use super::{
         CenterPoint, 
         PidParameter, 
         PwmPin, 
-        ShParameter
+        ShParameter,
+        Polarity
     },
     ad7172,
     CHANNEL_CONFIG_KEY,
@@ -166,6 +167,12 @@ impl Handler {
 
     fn engage_pid (socket: &mut TcpSocket, channels: &mut Channels, channel: usize) -> Result<Handler, Error> {
         channels.channel_state(channel).pid_engaged = true;
+        send_line(socket, b"{}");
+        Ok(Handler::Handled)
+    }
+
+    fn set_polarity(socket: &mut TcpSocket, channels: &mut Channels, channel: usize, polarity: Polarity) -> Result<Handler, Error> {
+        channels.set_polarity(channel, polarity);
         send_line(socket, b"{}");
         Ok(Handler::Handled)
     }
@@ -411,6 +418,7 @@ impl Handler {
             Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
             Command::PwmPid { channel } => Handler::engage_pid(socket, channels, channel),
+            Command::PwmPolarity { channel, polarity } => Handler::set_polarity(socket, channels, channel, polarity),
             Command::Pwm { channel, pin, value } => Handler::set_pwm(socket, channels, channel, pin, value),
             Command::CenterPoint { channel, center } => Handler::set_center_point(socket, channels, channel, center),
             Command::Pid { channel, parameter, value } => Handler::set_pid(socket, channels, channel, parameter, value),

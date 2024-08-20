@@ -135,6 +135,12 @@ pub enum CenterPoint {
     Override(f32),
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Polarity {
+    Normal,
+    Reversed,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Quit,
@@ -156,6 +162,10 @@ pub enum Command {
     /// Enable PID control for `i_set`
     PwmPid {
         channel: usize,
+    },
+    PwmPolarity {
+        channel: usize,
+        polarity: Polarity,
     },
     CenterPoint {
         channel: usize,
@@ -297,6 +307,18 @@ fn pwm_pid(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag("pid"))(input)
 }
 
+fn pwm_polarity(input: &[u8]) -> IResult<&[u8], Polarity> {
+    preceded(
+        tag("polarity"),
+        preceded(
+            whitespace,
+            alt((value(Polarity::Normal, tag("normal")),
+                 value(Polarity::Reversed, tag("reversed"))
+            ))
+        )
+    )(input)
+}
+
 fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("pwm")(input)?;
     alt((
@@ -308,6 +330,10 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 |input| {
                     let (input, ()) = pwm_pid(input)?;
                     Ok((input, Ok(Command::PwmPid { channel })))
+                },
+                |input| {
+                    let (input, polarity) = pwm_polarity(input)?;
+                    Ok((input, Ok(Command::PwmPolarity { channel, polarity })))
                 },
                 |input| {
                     let (input, config) = pwm_setup(input)?;

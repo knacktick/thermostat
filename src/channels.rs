@@ -17,7 +17,7 @@ use crate::{
     ad7172,
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
-    command_parser::{CenterPoint, PwmPin},
+    command_parser::{CenterPoint, PwmPin, Polarity},
     command_handler::JsonBuffer,
     pins::{self, Channel0VRef, Channel1VRef},
     steinhart_hart,
@@ -158,6 +158,11 @@ impl Channels {
 
     pub fn set_i(&mut self, channel: usize, i_set: ElectricCurrent) -> ElectricCurrent {
         let i_set = i_set.min(MAX_TEC_I).max(-MAX_TEC_I);
+        self.channel_state(channel).i_set = i_set;
+        let negate = match self.channel_state(channel).polarity {
+            Polarity::Normal => 1.0,
+            Polarity::Reversed => -1.0,
+        };
         let vref_meas = match channel.into() {
             0 => self.channel0.vref_meas,
             1 => self.channel1.vref_meas,
@@ -165,10 +170,9 @@ impl Channels {
         };
         let center_point = vref_meas;
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
-        let voltage = i_set * 10.0 * r_sense + center_point;
+        let voltage = negate * i_set * 10.0 * r_sense + center_point;
         let voltage = self.set_dac(channel, voltage);
-        let i_set = (voltage - center_point) / (10.0 * r_sense);
-        self.channel_state(channel).i_set = i_set;
+        let i_set = negate * (voltage - center_point) / (10.0 * r_sense);
         i_set
     }
 
@@ -386,18 +390,28 @@ impl Channels {
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let duty = self.get_pwm(channel, PwmPin::MaxIPos);
+        let duty = match self.channel_state(channel).polarity {
+            Polarity::Normal => self.get_pwm(channel, PwmPin::MaxIPos),
+            Polarity::Reversed => self.get_pwm(channel, PwmPin::MaxINeg),
+        };
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let duty = self.get_pwm(channel, PwmPin::MaxINeg);
+        let duty = match self.channel_state(channel).polarity {
+            Polarity::Normal => self.get_pwm(channel, PwmPin::MaxINeg),
+            Polarity::Reversed => self.get_pwm(channel, PwmPin::MaxIPos),
+        };
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
-        (self.adc_read(channel, PinsAdcReadTarget::ITec, 16) - self.adc_read(channel, PinsAdcReadTarget::VREF, 16)) / ElectricalResistance::new::<ohm>(0.4)
+        let tec_i = (self.adc_read(channel, PinsAdcReadTarget::ITec, 16) - self.adc_read(channel, PinsAdcReadTarget::VREF, 16)) / ElectricalResistance::new::<ohm>(0.4);
+        match self.channel_state(channel).polarity {
+            Polarity::Normal => tec_i,
+            Polarity::Reversed => -tec_i,
+        }
     }
 
     // Get voltage across TEC
@@ -442,15 +456,34 @@ impl Channels {
     pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = (max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero()) / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
-        let duty = self.set_pwm(channel, PwmPin::MaxIPos, duty);
+        let duty = match self.channel_state(channel).polarity {
+            Polarity::Normal => self.set_pwm(channel, PwmPin::MaxIPos, duty),
+            Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxINeg, duty),
+        };
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
     pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = (max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero()) / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
-        let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
+        let duty = match self.channel_state(channel).polarity {
+            Polarity::Normal => self.set_pwm(channel, PwmPin::MaxINeg, duty),
+            Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxIPos, duty),
+        };
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
+    }
+
+    pub fn set_polarity(&mut self, channel: usize, polarity: Polarity) {
+        if self.channel_state(channel).polarity != polarity {
+            let i_set = self.channel_state(channel).i_set;
+            let max_i_pos = self.get_max_i_pos(channel).0;
+            let max_i_neg = self.get_max_i_neg(channel).0;
+            self.channel_state(channel).polarity = polarity;
+
+            self.set_i(channel, i_set);
+            self.set_max_i_pos(channel, max_i_pos);
+            self.set_max_i_neg(channel, max_i_neg);
+        }
     }
 
     fn report(&mut self, channel: usize) -> Report {

@@ -17,7 +17,7 @@ use crate::{
     ad7172,
     pid,
     steinhart_hart as sh,
-    command_parser::CenterPoint,
+    command_parser::{CenterPoint, Polarity},
 };
 
 const R_INNER: f64 = 2.0 * 5100.0;
@@ -35,6 +35,7 @@ pub struct ChannelState {
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
+    pub polarity: Polarity,
 }
 
 impl ChannelState {
@@ -51,6 +52,7 @@ impl ChannelState {
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),
+            polarity: Polarity::Normal,
         }
     }
 
