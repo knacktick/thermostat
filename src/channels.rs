@@ -22,6 +22,7 @@ use crate::{
     pins::{self, Channel0VRef, Channel1VRef},
     steinhart_hart,
 };
+use crate::timer::sleep;
 
 pub enum PinsAdcReadTarget {
     VREF,
@@ -269,17 +270,6 @@ impl Channels {
         }
     }
 
-    pub fn read_dac_feedback_until_stable(&mut self, channel: usize, tolerance: ElectricPotential) -> ElectricPotential {
-        let mut prev = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 1);
-        loop {
-            let current = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 1);
-            if (current - prev).abs() < tolerance {
-                return current;
-            }
-            prev = current;
-        }
-    }
-
     /// Calibrates the DAC output to match vref of the MAX driver to reduce zero-current offset of the MAX driver output.
     ///
     /// The thermostat DAC applies a control voltage signal to the CTLI pin of MAX driver chip to control its output current.
@@ -306,7 +296,7 @@ impl Channels {
         let mut start_value = 1;
         let mut best_error = ElectricPotential::new::<volt>(100.0);
 
-        for step in (0..18).rev() {
+        for step in (5..18).rev() {
             let mut prev_value = start_value;
             for value in (start_value..=ad5680::MAX_VALUE).step_by(1 << step) {
                 match channel {
@@ -318,8 +308,9 @@ impl Channels {
                     }
                     _ => unreachable!(),
                 }
+                sleep(10);
 
-                let dac_feedback = self.read_dac_feedback_until_stable(channel, ElectricPotential::new::<volt>(0.001));
+                let dac_feedback = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 64);
                 let error = target_voltage - dac_feedback;
                 if error < ElectricPotential::new::<volt>(0.0) {
                     break;
