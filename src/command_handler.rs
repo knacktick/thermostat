@@ -22,7 +22,6 @@ use super::{
     config::ChannelConfig,
     dfu,
     flash_store::FlashStore,
-    session::Session,
     FanCtrl,
     hw_rev::HWRev,
 };
@@ -86,16 +85,6 @@ fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
 }
 
 impl Handler {
-
-    fn reporting(socket: &mut TcpSocket) -> Result<Handler, Error> {
-        send_line(socket, b"{}");
-        Ok(Handler::Handled)
-    }
-
-    fn show_report_mode(socket: &mut TcpSocket, session: &Session) -> Result<Handler, Error> {
-        let _ = writeln!(socket, "{{ \"report\": {:?} }}", session.reporting());
-        Ok(Handler::Handled)
-    }
 
     fn show_report(socket: &mut TcpSocket, channels: &mut Channels) -> Result<Handler, Error> {
         match channels.reports_json() {
@@ -412,11 +401,9 @@ impl Handler {
         }
     }
 
-    pub fn handle_command(command: Command, socket: &mut TcpSocket, channels: &mut Channels, session: &Session, store: &mut FlashStore, ipv4_config: &mut Ipv4Config, fan_ctrl: &mut FanCtrl, hwrev: HWRev) -> Result<Self, Error> {
+    pub fn handle_command(command: Command, socket: &mut TcpSocket, channels: &mut Channels, store: &mut FlashStore, ipv4_config: &mut Ipv4Config, fan_ctrl: &mut FanCtrl, hwrev: HWRev) -> Result<Self, Error> {
         match command {
             Command::Quit => Ok(Handler::CloseSocket),
-            Command::Reporting(_reporting) => Handler::reporting(socket),            
-            Command::Show(ShowCommand::Reporting) => Handler::show_report_mode(socket, session),            
             Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),
             Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),
             Command::Show(ShowCommand::Pwm) => Handler::show_pwm(socket, channels),

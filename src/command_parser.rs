@@ -96,7 +96,6 @@ pub struct Ipv4Config {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShowCommand {
     Input,
-    Reporting,
     Pwm,
     Pid,
     SteinhartHart,
@@ -148,7 +147,6 @@ pub enum Command {
     Reset,
     Ipv4(Ipv4Config),
     Show(ShowCommand),
-    Reporting(bool),
     /// PWM parameter setting
     Pwm {
         channel: usize,
@@ -233,12 +231,6 @@ fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
     Ok((input, result))
 }
 
-fn off_on(input: &[u8]) -> IResult<&[u8], bool> {
-    alt((value(false, tag("off")),
-         value(true, tag("on"))
-    ))(input)
-}
-
 fn channel(input: &[u8]) -> IResult<&[u8], usize> {
     map(one_of("01"), |c| (c as usize) - ('0' as usize))(input)
 }
@@ -246,24 +238,8 @@ fn channel(input: &[u8]) -> IResult<&[u8], usize> {
 fn report(input: &[u8]) -> IResult<&[u8], Command> {
     preceded(
         tag("report"),
-        alt((
-            preceded(
-                whitespace,
-                preceded(
-                    tag("mode"),
-                    alt((
-                        preceded(
-                            whitespace,
-                            // `report mode <on | off>` - Switch repoting mode
-                            map(off_on, Command::Reporting)
-                        ),
-                        // `report mode` - Show current reporting state
-                        value(Command::Show(ShowCommand::Reporting), end)
-                    ))
-                )),
-            // `report` - Report once
-            value(Command::Show(ShowCommand::Input), end)
-        ))
+        // `report` - Report once
+        value(Command::Show(ShowCommand::Input), end)
     )(input)
 }
 
@@ -680,24 +656,6 @@ mod test {
     fn parse_report() {
         let command = Command::parse(b"report");
         assert_eq!(command, Ok(Command::Show(ShowCommand::Input)));
-    }
-
-    #[test]
-    fn parse_report_mode() {
-        let command = Command::parse(b"report mode");
-        assert_eq!(command, Ok(Command::Show(ShowCommand::Reporting)));
-    }
-
-    #[test]
-    fn parse_report_mode_on() {
-        let command = Command::parse(b"report mode on");
-        assert_eq!(command, Ok(Command::Reporting(true)));
-    }
-
-    #[test]
-    fn parse_report_mode_off() {
-        let command = Command::parse(b"report mode off");
-        assert_eq!(command, Ok(Command::Reporting(false)));
     }
 
     #[test]

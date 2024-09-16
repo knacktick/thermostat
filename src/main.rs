@@ -180,10 +180,7 @@ fn main() -> ! {
             loop {
                 let mut new_ipv4_config = None;
                 let instant = Instant::from_millis(i64::from(timer::now()));
-                let updated_channel = channels.poll_adc(instant);
-                if let Some(channel) = updated_channel {
-                    server.for_each(|_, session| session.set_report_pending(channel.into()));
-                }
+                channels.poll_adc(instant);
 
                 fan_ctrl.cycle(channels.current_abs_max_tec_i());
 
@@ -216,7 +213,7 @@ fn main() -> ! {
                                 // Do nothing and feed more data to the line reader in the next loop cycle.
                                 Ok(SessionInput::Nothing) => {}
                                 Ok(SessionInput::Command(command)) => {
-                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut store, &mut ipv4_config, &mut fan_ctrl, hwrev) {
+                                    match Handler::handle_command(command, &mut socket, &mut channels, &mut store, &mut ipv4_config, &mut fan_ctrl, hwrev) {
                                         Ok(Handler::NewIPV4(ip)) => new_ipv4_config = Some(ip),                                
                                         Ok(Handler::Handled) => {},
                                         Ok(Handler::CloseSocket) => socket.close(),
@@ -230,19 +227,6 @@ fn main() -> ! {
                                 }
                                 Err(_) =>
                                     socket.close(),
-                            }
-                        } else if socket.can_send() {
-                            if let Some(channel) = session.is_report_pending() {
-                                match channels.reports_json() {
-                                    Ok(buf) => {
-                                        send_line(&mut socket, &buf[..]);
-                                        session.mark_report_sent(channel);
-                                    }
-                                    Err(e) => {
-                                        error!("unable to serialize report: {:?}", e);
-
-                                    }
-                                }
                             }
                         }
                     });

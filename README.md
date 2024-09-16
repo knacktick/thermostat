@@ -84,9 +84,7 @@ invalidate the first line of input.
 
 ### Reading ADC input
 
-Set report mode to `on` for a continuous stream of input data.
-
-The scope of this setting is per TCP session.
+ADC input data is provided in reports. Query for the latest report with the command `report`. See the *Reports* section below.
 
 
 ### TCP commands
@@ -97,8 +95,6 @@ formatted as line-delimited JSON.
 | Syntax                           | Function                                                                      |
 |----------------------------------|-------------------------------------------------------------------------------|
 | `report`                         | Show current input                                                            |
-| `report mode`                    | Show current report mode                                                      |
-| `report mode <off/on>`           | Set report mode                                                               |
 | `pwm`                            | Show current PWM settings                                                     |
 | `pwm <0/1> max_i_pos <amp>`      | Set maximum positive output current                                           |
 | `pwm <0/1> max_i_neg <amp>`      | Set maximum negative output current                                           |
@@ -251,8 +247,7 @@ pwm 0 pid
 
 ## Reports
 
-Use the bare `report` command to obtain a single report. Enable
-continuous reporting with `report mode on`. Reports are JSON objects
+Use the bare `report` command to obtain a single report. Reports are JSON objects
 with the following keys.
 
 | Key            | Unit            | Description                                          |

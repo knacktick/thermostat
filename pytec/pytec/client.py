@@ -1,6 +1,7 @@
 import socket
 import json
 import logging
+import time
 
 class CommandError(Exception):
     pass
@@ -126,9 +127,8 @@ class Client:
              'tec_u_meas': 2.5340000000000003,
              'pid_output': 2.067581958092247}
         """
-        self._command("report mode", "on")
-
         while True:
+            self._socket.sendall("report\n".encode('utf-8'))
             line = self._read_line()
             if not line:
                 break
@@ -136,6 +136,7 @@ class Client:
                 yield json.loads(line)
             except json.decoder.JSONDecodeError:
                 pass
+            time.sleep(0.05)
 
     def set_param(self, topic, channel, field="", value=""):
         """Set configuration parameters
