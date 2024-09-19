@@ -45,7 +45,11 @@ pub const MAX_TEC_V: ElectricPotential = ElectricPotential {
     units: PhantomData,
     value: 4.0,
 };
-
+const MAX_TEC_I_DUTY_TO_CURRENT_RATE: ElectricCurrent = ElectricCurrent {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 1.0 / (10.0 * R_SENSE / 3.3),
+};
 // DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
 const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
     dimension: PhantomData,
@@ -382,15 +386,13 @@ impl Channels {
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxIPos);
-        (duty * max, MAX_TEC_I)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxINeg);
-        (duty * max, MAX_TEC_I)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     // Get current passing through TEC
@@ -439,16 +441,16 @@ impl Channels {
 
     pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
-        let duty = (max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero()) / max).get::<ratio>();
+        let duty = (max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero()) / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxIPos, duty);
-        (duty * max, max)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
     pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
-        let duty = (max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero()) / max).get::<ratio>();
+        let duty = (max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero()) / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
-        (duty * max, max)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
     fn report(&mut self, channel: usize) -> Report {
