@@ -58,7 +58,7 @@ mod hw_rev;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
-const WATCHDOG_INTERVAL: u32 = 2_000;
+const WATCHDOG_INTERVAL: u32 = 1_000;
 #[cfg(feature = "semihosting")]
 const WATCHDOG_INTERVAL: u32 = 30_000;
 

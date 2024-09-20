@@ -297,7 +297,6 @@ impl Channels {
         let mut best_error = ElectricPotential::new::<volt>(100.0);
 
         for step in (5..18).rev() {
-            let mut prev_value = start_value;
             for value in (start_value..=ad5680::MAX_VALUE).step_by(1 << step) {
                 match channel {
                     0 => {
@@ -316,7 +315,7 @@ impl Channels {
                     break;
                 } else if error < best_error {
                     best_error = error;
-                    start_value = prev_value;
+                    start_value = value;
 
                     let vref = (value as f64 / ad5680::MAX_VALUE as f64) * DAC_OUT_V_MAX;
                     match channel {
@@ -325,8 +324,6 @@ impl Channels {
                         _ => unreachable!(),
                     }
                 }
-
-                prev_value = value;
             }
         }
 
