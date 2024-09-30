@@ -545,6 +545,7 @@ impl Channels {
             max_v: self.get_max_v(channel).into(),
             max_i_pos: self.get_max_i_pos(channel).into(),
             max_i_neg: self.get_max_i_neg(channel).into(),
+            polarity: PolarityJson(self.channel_state(channel).polarity.clone()),
         }
     }
 
@@ -626,6 +627,21 @@ impl Serialize for CenterPointJson {
     }
 }
 
+pub struct PolarityJson(Polarity);
+
+// used in JSON encoding, not for config
+impl Serialize for PolarityJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(match self.0 {
+            Polarity::Normal => "normal",
+            Polarity::Reversed => "reversed",
+        })
+    }
+}
+
 #[derive(Serialize)]
 pub struct PwmSummaryField<T: Serialize> {
     value: T,
@@ -646,6 +662,7 @@ pub struct PwmSummary {
     max_v: PwmSummaryField<ElectricPotential>,
     max_i_pos: PwmSummaryField<ElectricCurrent>,
     max_i_neg: PwmSummaryField<ElectricCurrent>,
+    polarity: PolarityJson,
 }
 
 #[derive(Serialize)]

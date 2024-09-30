@@ -57,12 +57,14 @@ class Client:
               'max_i_neg': {'max': 3.0, 'value': 3.0},
               'max_v': {'max': 5.988, 'value': 5.988},
               'max_i_pos': {'max': 3.0, 'value': 3.0}},
+              'polarity': 'normal',
              {'channel': 1,
               'center': 'vref',
               'i_set': {'max': 2.9802790335151985, 'value': -0.02002179650216762},
               'max_i_neg': {'max': 3.0, 'value': 3.0},
               'max_v': {'max': 5.988, 'value': 5.988},
               'max_i_pos': {'max': 3.0, 'value': 3.0}}
+              'polarity': 'normal',
             ]
         """
         return self._get_conf("pwm")
