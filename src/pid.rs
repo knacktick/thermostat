@@ -39,7 +39,7 @@ pub struct Controller {
 impl Controller {
     pub const fn new(parameters: Parameters) -> Controller {
         Controller {
-            parameters: parameters,
+            parameters,
             target: 0.0,
             u1: 0.0,
             x1: 0.0,

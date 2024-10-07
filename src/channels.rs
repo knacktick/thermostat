@@ -24,7 +24,7 @@ use uom::si::{
 };
 
 pub enum PinsAdcReadTarget {
-    VREF,
+    VRef,
     DacVfb,
     ITec,
     VTec,
@@ -131,7 +131,7 @@ impl Channels {
     /// calculate the TEC i_set centerpoint
     pub fn get_center(&mut self, channel: usize) -> ElectricPotential {
         match self.channel_state(channel).center {
-            CenterPoint::Vref => self.adc_read(channel, PinsAdcReadTarget::VREF, 8),
+            CenterPoint::VRef => self.adc_read(channel, PinsAdcReadTarget::VRef, 8),
             CenterPoint::Override(center_point) => {
                 ElectricPotential::new::<volt>(center_point.into())
             }
@@ -168,7 +168,7 @@ impl Channels {
             Polarity::Normal => 1.0,
             Polarity::Reversed => -1.0,
         };
-        let vref_meas = match channel.into() {
+        let vref_meas = match channel {
             0 => self.channel0.vref_meas,
             1 => self.channel1.vref_meas,
             _ => unreachable!(),
@@ -177,8 +177,8 @@ impl Channels {
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let voltage = negate * i_set * 10.0 * r_sense + center_point;
         let voltage = self.set_dac(channel, voltage);
-        let i_set = negate * (voltage - center_point) / (10.0 * r_sense);
-        i_set
+
+        negate * (voltage - center_point) / (10.0 * r_sense)
     }
 
     /// AN4073: ADC Reading Dispersion can be reduced through Averaging
@@ -192,7 +192,7 @@ impl Channels {
         match channel {
             0 => {
                 sample = match adc_read_target {
-                    PinsAdcReadTarget::VREF => match &self.channel0.vref_pin {
+                    PinsAdcReadTarget::VRef => match &self.channel0.vref_pin {
                         Channel0VRef::Analog(vref_pin) => {
                             for _ in (0..avg_pt).rev() {
                                 sample += self.pins_adc.convert(
@@ -202,7 +202,7 @@ impl Channels {
                             }
                             sample / avg_pt as u32
                         }
-                        Channel0VRef::Disabled(_) => 2048 as u32,
+                        Channel0VRef::Disabled(_) => 2048_u32,
                     },
                     PinsAdcReadTarget::DacVfb => {
                         for _ in (0..avg_pt).rev() {
@@ -237,7 +237,7 @@ impl Channels {
             }
             1 => {
                 sample = match adc_read_target {
-                    PinsAdcReadTarget::VREF => match &self.channel1.vref_pin {
+                    PinsAdcReadTarget::VRef => match &self.channel1.vref_pin {
                         Channel1VRef::Analog(vref_pin) => {
                             for _ in (0..avg_pt).rev() {
                                 sample += self.pins_adc.convert(
@@ -247,7 +247,7 @@ impl Channels {
                             }
                             sample / avg_pt as u32
                         }
-                        Channel1VRef::Disabled(_) => 2048 as u32,
+                        Channel1VRef::Disabled(_) => 2048_u32,
                     },
                     PinsAdcReadTarget::DacVfb => {
                         for _ in (0..avg_pt).rev() {
@@ -304,9 +304,9 @@ impl Channels {
         let samples = 50;
         let mut target_voltage = ElectricPotential::new::<volt>(0.0);
         for _ in 0..samples {
-            target_voltage = target_voltage + self.get_center(channel);
+            target_voltage += self.get_center(channel);
         }
-        target_voltage = target_voltage / samples as f64;
+        target_voltage /= samples as f64;
         let mut start_value = 1;
         let mut best_error = ElectricPotential::new::<volt>(100.0);
 
@@ -378,7 +378,7 @@ impl Channels {
     // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
         let tec_i = (self.adc_read(channel, PinsAdcReadTarget::ITec, 16)
-            - self.adc_read(channel, PinsAdcReadTarget::VREF, 16))
+            - self.adc_read(channel, PinsAdcReadTarget::VRef, 16))
             / ElectricalResistance::new::<ohm>(0.4);
         match self.channel_state(channel).polarity {
             Polarity::Normal => tec_i,
@@ -608,7 +608,7 @@ impl Serialize for CenterPointJson {
         S: Serializer,
     {
         match self.0 {
-            CenterPoint::Vref => serializer.serialize_str("vref"),
+            CenterPoint::VRef => serializer.serialize_str("vref"),
             CenterPoint::Override(vref) => serializer.serialize_f32(vref),
         }
     }

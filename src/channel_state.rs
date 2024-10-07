@@ -43,7 +43,7 @@ impl ChannelState {
             adc_time: Instant::from_secs(0),
             // default: 10 Hz
             adc_interval: Duration::from_millis(100),
-            center: CenterPoint::Vref,
+            center: CenterPoint::VRef,
             dac_value: ElectricPotential::new::<volt>(0.0),
             i_set: ElectricCurrent::new::<ampere>(0.0),
             pwm_limits: PwmLimits {

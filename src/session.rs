@@ -77,12 +77,9 @@ impl Session {
         for (i, b) in buf.iter().enumerate() {
             buf_bytes = i + 1;
             let line = self.reader.feed(*b);
-            match line {
-                Some(line) => {
-                    let command = Command::parse(&line);
-                    return (buf_bytes, command.into());
-                }
-                None => {}
+            if let Some(line) = line {
+                let command = Command::parse(line);
+                return (buf_bytes, command.into());
             }
         }
         (buf_bytes, SessionInput::Nothing)

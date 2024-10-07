@@ -74,7 +74,7 @@ fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
             data.len(),
         );
     } else {
-        match socket.send_slice(&data) {
+        match socket.send_slice(data) {
             Ok(sent) if sent == data.len() => {
                 let _ = socket.send_slice(b"\n");
                 // success
@@ -119,24 +119,14 @@ fn main() -> ! {
 
     let (pins, mut leds, mut eeprom, eth_pins, usb, fan, hwrev, hw_settings) = Pins::setup(
         clocks,
-        dp.TIM1,
-        dp.TIM3,
-        dp.TIM8,
-        dp.GPIOA,
-        dp.GPIOB,
-        dp.GPIOC,
-        dp.GPIOD,
-        dp.GPIOE,
-        dp.GPIOF,
-        dp.GPIOG,
+        (dp.TIM1, dp.TIM3, dp.TIM8),
+        (
+            dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
+        ),
         dp.I2C1,
-        dp.SPI2,
-        dp.SPI4,
-        dp.SPI5,
+        (dp.SPI2, dp.SPI4, dp.SPI5),
         dp.ADC1,
-        dp.OTG_FS_GLOBAL,
-        dp.OTG_FS_DEVICE,
-        dp.OTG_FS_PWRCLK,
+        (dp.OTG_FS_GLOBAL, dp.OTG_FS_DEVICE, dp.OTG_FS_PWRCLK),
     );
 
     leds.r1.on();
@@ -148,8 +138,8 @@ fn main() -> ! {
     let mut store = flash_store::store(dp.FLASH);
 
     let mut channels = Channels::new(pins);
-    for c in 0..CHANNELS {
-        match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
+    for (c, key) in CHANNEL_CONFIG_KEY.iter().enumerate().take(CHANNELS) {
+        match store.read_value::<ChannelConfig>(key) {
             Ok(Some(config)) => config.apply(&mut channels, c),
             Ok(None) => error!("flash config not found for channel {}", c),
             Err(e) => error!("unable to load config {} from flash: {:?}", c, e),
@@ -264,10 +254,10 @@ fn main() -> ! {
                     }
 
                     // Apply new IPv4 address/gateway
-                    new_ipv4_config.take().map(|config| {
+                    if let Some(config) = new_ipv4_config.take() {
                         server.set_ipv4_config(config.clone());
                         ipv4_config = config;
-                    });
+                    };
 
                     // Update watchdog
                     wd.feed();

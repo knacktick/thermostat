@@ -133,24 +133,24 @@ impl Pins {
     /// Setup GPIO pins and configure MCU peripherals
     pub fn setup(
         clocks: Clocks,
-        tim1: TIM1,
-        tim3: TIM3,
-        tim8: TIM8,
-        gpioa: GPIOA,
-        gpiob: GPIOB,
-        gpioc: GPIOC,
-        gpiod: GPIOD,
-        gpioe: GPIOE,
-        gpiof: GPIOF,
-        gpiog: GPIOG,
+        (tim1, tim3, tim8): (TIM1, TIM3, TIM8),
+        (gpioa, gpiob, gpioc, gpiod, gpioe, gpiof, gpiog): (
+            GPIOA,
+            GPIOB,
+            GPIOC,
+            GPIOD,
+            GPIOE,
+            GPIOF,
+            GPIOG,
+        ),
         i2c1: I2C1,
-        spi2: SPI2,
-        spi4: SPI4,
-        spi5: SPI5,
+        (spi2, spi4, spi5): (SPI2, SPI4, SPI5),
         adc1: ADC1,
-        otg_fs_global: OTG_FS_GLOBAL,
-        otg_fs_device: OTG_FS_DEVICE,
-        otg_fs_pwrclk: OTG_FS_PWRCLK,
+        (otg_fs_global, otg_fs_device, otg_fs_pwrclk): (
+            OTG_FS_GLOBAL,
+            OTG_FS_DEVICE,
+            OTG_FS_PWRCLK,
+        ),
     ) -> (
         Self,
         Leds,
@@ -175,7 +175,11 @@ impl Pins {
         let pins_adc = Adc::adc1(adc1, true, Default::default());
 
         let pwm = PwmPins::setup(
-            clocks, tim1, tim3, gpioc.pc6, gpioc.pc7, gpioe.pe9, gpioe.pe11, gpioe.pe13, gpioe.pe14,
+            clocks,
+            (tim1, tim3),
+            (gpioc.pc6, gpioc.pc7),
+            (gpioe.pe9, gpioe.pe11),
+            (gpioe.pe13, gpioe.pe14),
         );
 
         let hwrev = HWRev::detect_hw_rev(&HWRevPins {
@@ -188,7 +192,7 @@ impl Pins {
 
         let (dac0_spi, dac0_sync) = Self::setup_dac0(clocks, spi4, gpioe.pe2, gpioe.pe4, gpioe.pe6);
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
-        let _ = shdn0.set_low();
+        shdn0.set_low();
         let vref0_pin = if hwrev.major > 2 {
             Channel0VRef::Analog(gpioa.pa0.into_analog())
         } else {
@@ -209,7 +213,7 @@ impl Pins {
 
         let (dac1_spi, dac1_sync) = Self::setup_dac1(clocks, spi5, gpiof.pf7, gpiof.pf6, gpiof.pf9);
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
-        let _ = shdn1.set_low();
+        shdn1.set_low();
         let vref1_pin = if hwrev.major > 2 {
             Channel1VRef::Analog(gpioa.pa3.into_analog())
         } else {
@@ -354,14 +358,10 @@ pub struct PwmPins {
 impl PwmPins {
     fn setup<M1, M2, M3, M4, M5, M6>(
         clocks: Clocks,
-        tim1: TIM1,
-        tim3: TIM3,
-        max_v0: PC6<M1>,
-        max_v1: PC7<M2>,
-        max_i_pos0: PE9<M3>,
-        max_i_pos1: PE11<M4>,
-        max_i_neg0: PE13<M5>,
-        max_i_neg1: PE14<M6>,
+        (tim1, tim3): (TIM1, TIM3),
+        (max_v0, max_v1): (PC6<M1>, PC7<M2>),
+        (max_i_pos0, max_i_pos1): (PE9<M3>, PE11<M4>),
+        (max_i_neg0, max_i_neg1): (PE13<M5>, PE14<M6>),
     ) -> PwmPins {
         let freq = 20u32.khz();
 

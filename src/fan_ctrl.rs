@@ -95,9 +95,7 @@ impl FanCtrl {
             return 0f32;
         }
         let fan = self.fan.as_mut().unwrap();
-        let fan_pwm = fan_pwm
-            .min(MAX_USER_FAN_PWM as u32)
-            .max(MIN_USER_FAN_PWM as u32);
+        let fan_pwm = fan_pwm.clamp(MIN_USER_FAN_PWM as u32, MAX_USER_FAN_PWM as u32);
         let duty = scale_number(
             fan_pwm as f32,
             self.hw_settings.min_fan_pwm,

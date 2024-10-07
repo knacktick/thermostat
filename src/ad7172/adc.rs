@@ -199,7 +199,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
                 ChecksumMode::Crc => ChecksumMode::Crc,
             });
             checksum.feed(&[address]);
-            checksum.feed(&reg_data);
+            checksum.feed(reg_data);
             let checksum_out = checksum.result();
 
             let mut data = reg_data.clone();
@@ -237,10 +237,10 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    fn transfer<'w>(
+    fn transfer(
         &mut self,
         addr: u8,
-        reg_data: &'w mut [u8],
+        reg_data: &mut [u8],
         checksum: Option<u8>,
     ) -> Result<Option<u8>, SPI::Error> {
         let mut addr_buf = [addr];

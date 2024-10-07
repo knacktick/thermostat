@@ -103,15 +103,10 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
     fn set_ipv4_address(&mut self, ipv4_address: Ipv4Cidr) {
         self.net.update_ip_addrs(|addrs| {
             for addr in addrs.iter_mut() {
-                match addr {
-                    IpCidr::Ipv4(_) => {
-                        *addr = IpCidr::Ipv4(ipv4_address);
-                        // done
-                        break;
-                    }
-                    _ => {
-                        // skip
-                    }
+                if let IpCidr::Ipv4(_) = addr {
+                    *addr = IpCidr::Ipv4(ipv4_address);
+                    // done
+                    break;
                 }
             }
         });

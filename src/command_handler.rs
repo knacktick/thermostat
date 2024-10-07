@@ -33,9 +33,9 @@ pub enum Handler {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
-    ReportError,
-    PostFilterRateError,
-    FlashError,
+    Report,
+    PostFilterRate,
+    Flash,
 }
 
 pub type JsonBuffer = Vec<u8, U1024>;
@@ -52,7 +52,7 @@ fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
             data.len(),
         );
     } else {
-        match socket.send_slice(&data) {
+        match socket.send_slice(data) {
             Ok(sent) if sent == data.len() => {
                 let _ = socket.send_slice(b"\n");
                 // success
@@ -75,7 +75,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize report: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                return Err(Error::ReportError);
+                return Err(Error::Report);
             }
         }
         Ok(Handler::Handled)
@@ -89,7 +89,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize pid summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                return Err(Error::ReportError);
+                return Err(Error::Report);
             }
         }
         Ok(Handler::Handled)
@@ -103,7 +103,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize pwm summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                return Err(Error::ReportError);
+                return Err(Error::Report);
             }
         }
         Ok(Handler::Handled)
@@ -120,7 +120,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize steinhart-hart summaries: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                return Err(Error::ReportError);
+                return Err(Error::Report);
             }
         }
         Ok(Handler::Handled)
@@ -134,7 +134,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize postfilter summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                return Err(Error::ReportError);
+                return Err(Error::Report);
             }
         }
         Ok(Handler::Handled)
@@ -286,7 +286,7 @@ impl Handler {
                     socket,
                     b"{{\"error\": \"unable to choose postfilter rate\"}}",
                 );
-                return Err(Error::PostFilterRateError);
+                return Err(Error::PostFilterRate);
             }
         }
         Ok(Handler::Handled)
@@ -298,9 +298,9 @@ impl Handler {
         store: &mut FlashStore,
         channel: Option<usize>,
     ) -> Result<Handler, Error> {
-        for c in 0..CHANNELS {
+        for (c, key) in CHANNEL_CONFIG_KEY.iter().enumerate().take(CHANNELS) {
             if channel.is_none() || channel == Some(c) {
-                match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
+                match store.read_value::<ChannelConfig>(key) {
                     Ok(Some(config)) => {
                         config.apply(channels, c);
                         send_line(socket, b"{}");
@@ -312,7 +312,7 @@ impl Handler {
                     Err(e) => {
                         error!("unable to load config from flash: {:?}", e);
                         let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                        return Err(Error::FlashError);
+                        return Err(Error::Flash);
                     }
                 }
             }
@@ -326,18 +326,18 @@ impl Handler {
         channel: Option<usize>,
         store: &mut FlashStore,
     ) -> Result<Handler, Error> {
-        for c in 0..CHANNELS {
+        for (c, key) in CHANNEL_CONFIG_KEY.iter().enumerate().take(CHANNELS) {
             let mut store_value_buf = [0u8; 256];
             if channel.is_none() || channel == Some(c) {
                 let config = ChannelConfig::new(channels, c);
-                match store.write_value(CHANNEL_CONFIG_KEY[c], &config, &mut store_value_buf) {
+                match store.write_value(key, &config, &mut store_value_buf) {
                     Ok(()) => {
                         send_line(socket, b"{}");
                     }
                     Err(e) => {
                         error!("unable to save channel {} config to flash: {:?}", c, e);
                         let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                        return Err(Error::FlashError);
+                        return Err(Error::Flash);
                     }
                 }
             }
@@ -408,7 +408,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize fan summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                Err(Error::ReportError)
+                Err(Error::Report)
             }
         }
     }
@@ -457,7 +457,7 @@ impl Handler {
             Err(e) => {
                 error!("unable to serialize HWRev summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                Err(Error::ReportError)
+                Err(Error::Report)
             }
         }
     }

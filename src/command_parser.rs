@@ -126,7 +126,7 @@ pub enum PwmPin {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CenterPoint {
-    Vref,
+    VRef,
     Override(f32),
 }
 
@@ -208,7 +208,7 @@ fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
     take_while1(is_digit)(input).map(|(input, digits)| {
         let result = from_utf8(digits)
             .map_err(|e| e.into())
-            .and_then(|digits| u32::from_str_radix(digits, 10).map_err(|e| e.into()));
+            .and_then(|digits| digits.parse::<u32>().map_err(|e| e.into()));
         (input, result)
     })
 }
@@ -216,7 +216,7 @@ fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
 fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
     let (input, sign) = opt(is_a("-"))(input)?;
     let negative = sign.is_some();
-    let (input, digits) = take_while1(|c| is_digit(c) || c == '.' as u8)(input)?;
+    let (input, digits) = take_while1(|c| is_digit(c) || c == b'.')(input)?;
     let result = from_utf8(digits)
         .map_err(|e| e.into())
         .and_then(|digits| f64::from_str_radix(digits, 10).map_err(|e| e.into()))
@@ -321,7 +321,7 @@ fn center_point(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = whitespace(input)?;
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
-    let (input, center) = alt((value(Ok(CenterPoint::Vref), tag("vref")), |input| {
+    let (input, center) = alt((value(Ok(CenterPoint::VRef), tag("vref")), |input| {
         let (input, value) = float(input)?;
         Ok((
             input,
@@ -541,13 +541,13 @@ fn fan_curve(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                     let (input, k_b) = float(input)?;
                     let (input, _) = whitespace(input)?;
                     let (input, k_c) = float(input)?;
-                    if k_a.is_ok() && k_b.is_ok() && k_c.is_ok() {
+                    if let (Ok(k_a), Ok(k_b), Ok(k_c)) = (k_a, k_b, k_c) {
                         Ok((
                             input,
                             Ok(Command::FanCurve {
-                                k_a: k_a.unwrap() as f32,
-                                k_b: k_b.unwrap() as f32,
-                                k_c: k_c.unwrap() as f32,
+                                k_a: k_a as f32,
+                                k_b: k_b as f32,
+                                k_c: k_c as f32,
                             }),
                         ))
                     } else {
@@ -584,7 +584,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 impl Command {
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         match command(input) {
-            Ok((input_remain, result)) if input_remain.len() == 0 => result,
+            Ok((input_remain, result)) if input_remain.is_empty() => result,
             Ok((input_remain, _)) => Err(Error::UnexpectedInput(input_remain[0])),
             Err(e) => Err(e.into()),
         }
@@ -820,7 +820,7 @@ mod test {
             command,
             Ok(Command::CenterPoint {
                 channel: 1,
-                center: CenterPoint::Vref,
+                center: CenterPoint::VRef,
             })
         );
     }
