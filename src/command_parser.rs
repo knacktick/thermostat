@@ -695,6 +695,15 @@ mod test {
     }
 
     #[test]
+    fn parse_pwm_polarity() {
+        let command = Command::parse(b"pwm 0 polarity reversed");
+        assert_eq!(command, Ok(Command::PwmPolarity {
+            channel: 0,
+            polarity: Polarity::Reversed,
+        }));
+    }
+
+    #[test]
     fn parse_pwm_pid() {
         let command = Command::parse(b"pwm 0 pid");
         assert_eq!(command, Ok(Command::PwmPid {
