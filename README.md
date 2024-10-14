@@ -109,8 +109,8 @@ formatted as line-delimited JSON.
 | `pid <0/1> kp <value>`                    | Set proportional gain                                                         |
 | `pid <0/1> ki <value>`                    | Set integral gain                                                             |
 | `pid <0/1> kd <value>`                    | Set differential gain                                                         |
-| `pid <0/1> output_min <amp>`              | Set mininum output                                                            |
-| `pid <0/1> output_max <amp>`              | Set maximum output                                                            |
+| `pid <0/1> output_min <amp>`              | Set lower limit of PID-regulated output current                               |
+| `pid <0/1> output_max <amp>`              | Set upper limit of PID-regulated output current                               |
 | `b-p`                                     | Show B-Parameter equation parameters                                          |
 | `b-p <0/1> <t0/b/r0> <value>`             | Set B-Parameter for a channel                                                 |
 | `postfilter`                              | Show postfilter settings                                                      |
