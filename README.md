@@ -95,8 +95,6 @@ formatted as line-delimited JSON.
 | Syntax                                     | Function                                                                      |
 |------------------------------------------- |-------------------------------------------------------------------------------|
 | `report`                                   | Show current input                                                            |
-| `report mode`                              | Show current report mode                                                      |
-| `report mode <off/on>`                     | Set report mode                                                               |
 | `pwm`                                      | Show current PWM settings                                                     |
 | `pwm <0/1> max_i_pos <amp>`                | Set maximum positive output current, clamped to [0, 2]                        |
 | `pwm <0/1> max_i_neg <amp>`                | Set maximum negative output current, clamped to [0, 2]                        |
