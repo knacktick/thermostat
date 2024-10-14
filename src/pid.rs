@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
@@ -29,38 +29,37 @@ impl Default for Parameters {
 #[derive(Clone)]
 pub struct Controller {
     pub parameters: Parameters,
-    pub target : f64,
-    u1 : f64,
-    x1 : f64,
-    x2 : f64,
-    pub y1 : f64,
+    pub target: f64,
+    u1: f64,
+    x1: f64,
+    x2: f64,
+    pub y1: f64,
 }
 
 impl Controller {
     pub const fn new(parameters: Parameters) -> Controller {
         Controller {
             parameters: parameters,
-            target : 0.0,
-            u1 : 0.0,
-            x1 : 0.0,
-            x2 : 0.0,
-            y1 : 0.0,
+            target: 0.0,
+            u1: 0.0,
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
         }
     }
 
     // Based on https://hackmd.io/IACbwcOTSt6Adj3_F9bKuw PID implementation
     // Input x(t), target u(t), output y(t)
-    // y0' =   y1 - ki * u0   
+    // y0' =   y1 - ki * u0
     //       + x0 * (kp + ki + kd)
     //       - x1 * (kp + 2kd)
     //       + x2 * kd
     // y0  = clip(y0', ymin, ymax)
     pub fn update(&mut self, input: f64) -> f64 {
-        
         let mut output: f64 = self.y1 - self.target * f64::from(self.parameters.ki)
-                            + input * f64::from(self.parameters.kp + self.parameters.ki + self.parameters.kd)
-                            - self.x1 * f64::from(self.parameters.kp + 2.0 * self.parameters.kd)
-                            + self.x2 * f64::from(self.parameters.kd);
+            + input * f64::from(self.parameters.kp + self.parameters.ki + self.parameters.kd)
+            - self.x1 * f64::from(self.parameters.kp + 2.0 * self.parameters.kd)
+            + self.x2 * f64::from(self.parameters.kd);
         if output < self.parameters.output_min.into() {
             output = self.parameters.output_min.into();
         }
@@ -70,7 +69,7 @@ impl Controller {
         self.x2 = self.x1;
         self.x1 = input;
         self.u1 = self.target;
-        self.y1 = output;        
+        self.y1 = output;
         output
     }
 
@@ -109,17 +108,17 @@ mod test {
     #[test]
     fn test_controller() {
         // Initial and ambient temperature
-        const DEFAULT: f64 = 20.0;    
-        // Target temperature  
-        const TARGET: f64 = 40.0;   
-        // Control tolerance    
-        const ERROR: f64 = 0.01;    
-        // System response delay    
-        const DELAY: usize = 10;  
+        const DEFAULT: f64 = 20.0;
+        // Target temperature
+        const TARGET: f64 = 40.0;
+        // Control tolerance
+        const ERROR: f64 = 0.01;
+        // System response delay
+        const DELAY: usize = 10;
         // Heat lost
-        const LOSS: f64 = 0.05;    
-        // Limit simulation cycle, reaching this limit before settling fails test      
-        const CYCLE_LIMIT: u32 = 1000;  
+        const LOSS: f64 = 0.05;
+        // Limit simulation cycle, reaching this limit before settling fails test
+        const CYCLE_LIMIT: u32 = 1000;
 
         let mut pid = Controller::new(PARAMETERS.clone());
         pid.target = TARGET;

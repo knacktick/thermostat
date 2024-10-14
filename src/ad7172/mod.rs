@@ -1,13 +1,10 @@
 use core::fmt;
 use num_traits::float::Float;
-use serde::{Serialize, Deserialize};
-use stm32f4xx_hal::{
-    time::MegaHertz,
-    spi,
-};
+use serde::{Deserialize, Serialize};
+use stm32f4xx_hal::{spi, time::MegaHertz};
 
-pub mod regs;
 mod checksum;
+pub mod regs;
 pub use checksum::ChecksumMode;
 mod adc;
 pub use adc::*;
@@ -21,7 +18,6 @@ pub const SPI_MODE: spi::Mode = spi::Mode {
 pub const SPI_CLOCK: MegaHertz = MegaHertz(2);
 
 pub const MAX_VALUE: u32 = 0xFF_FFFF;
-
 
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]
@@ -105,7 +101,8 @@ impl fmt::Display for Input {
             RefPos => "ref+",
             RefNeg => "ref-",
             _ => "<INVALID>",
-        }.fmt(fmt)
+        }
+        .fmt(fmt)
     }
 }
 
@@ -141,7 +138,8 @@ impl fmt::Display for RefSource {
             Internal => "internal",
             Avdd1MinusAvss => "avdd1-avss",
             _ => "<INVALID>",
-        }.fmt(fmt)
+        }
+        .fmt(fmt)
     }
 }
 

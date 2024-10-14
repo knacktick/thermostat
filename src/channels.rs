@@ -1,3 +1,13 @@
+use crate::timer::sleep;
+use crate::{
+    ad5680, ad7172,
+    channel::{Channel, Channel0, Channel1},
+    channel_state::ChannelState,
+    command_handler::JsonBuffer,
+    command_parser::{CenterPoint, Polarity, PwmPin},
+    pins::{self, Channel0VRef, Channel1VRef},
+    steinhart_hart,
+};
 use core::marker::PhantomData;
 use heapless::{consts::U2, Vec};
 use num_traits::Zero;
@@ -5,24 +15,13 @@ use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
 use uom::si::{
-    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, Time},
-    electric_potential::{millivolt, volt},
     electric_current::ampere,
+    electric_potential::{millivolt, volt},
     electrical_resistance::ohm,
+    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, Time},
     ratio::ratio,
     thermodynamic_temperature::degree_celsius,
 };
-use crate::{
-    ad5680,
-    ad7172,
-    channel::{Channel, Channel0, Channel1},
-    channel_state::ChannelState,
-    command_parser::{CenterPoint, PwmPin, Polarity},
-    command_handler::JsonBuffer,
-    pins::{self, Channel0VRef, Channel1VRef},
-    steinhart_hart,
-};
-use crate::timer::sleep;
 
 pub enum PinsAdcReadTarget {
     VREF,
@@ -73,19 +72,25 @@ impl Channels {
         adc.set_sync_enable(false).unwrap();
 
         // Setup channels and start ADC
-        adc.setup_channel(0, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
-        let adc_calibration0 = adc.get_calibration(0)
-            .expect("adc_calibration0");
-        adc.setup_channel(1, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
-        let adc_calibration1 = adc.get_calibration(1)
-            .expect("adc_calibration1");
+        adc.setup_channel(0, ad7172::Input::Ain2, ad7172::Input::Ain3)
+            .unwrap();
+        let adc_calibration0 = adc.get_calibration(0).expect("adc_calibration0");
+        adc.setup_channel(1, ad7172::Input::Ain0, ad7172::Input::Ain1)
+            .unwrap();
+        let adc_calibration1 = adc.get_calibration(1).expect("adc_calibration1");
         adc.start_continuous_conversion().unwrap();
 
         let channel0 = Channel::new(pins.channel0, adc_calibration0);
         let channel1 = Channel::new(pins.channel1, adc_calibration1);
         let pins_adc = pins.pins_adc;
         let pwm = pins.pwm;
-        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
+        let mut channels = Channels {
+            channel0,
+            channel1,
+            adc,
+            pins_adc,
+            pwm,
+        };
         for channel in 0..CHANNELS {
             channels.calibrate_dac_value(channel);
             channels.set_i(channel, ElectricCurrent::new::<ampere>(0.0));
@@ -126,10 +131,10 @@ impl Channels {
     /// calculate the TEC i_set centerpoint
     pub fn get_center(&mut self, channel: usize) -> ElectricPotential {
         match self.channel_state(channel).center {
-            CenterPoint::Vref =>
-                self.adc_read(channel, PinsAdcReadTarget::VREF, 8),
-            CenterPoint::Override(center_point) =>
-                ElectricPotential::new::<volt>(center_point.into()),
+            CenterPoint::Vref => self.adc_read(channel, PinsAdcReadTarget::VREF, 8),
+            CenterPoint::Override(center_point) => {
+                ElectricPotential::new::<volt>(center_point.into())
+            }
         }
     }
 
@@ -146,7 +151,7 @@ impl Channels {
 
     /// i_set DAC
     fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> ElectricPotential {
-        let value = ((voltage / DAC_OUT_V_MAX).get::<ratio>() * (ad5680::MAX_VALUE as f64)) as u32 ;
+        let value = ((voltage / DAC_OUT_V_MAX).get::<ratio>() * (ad5680::MAX_VALUE as f64)) as u32;
         match channel {
             0 => self.channel0.dac.set(value).unwrap(),
             1 => self.channel1.dac.set(value).unwrap(),
@@ -177,49 +182,52 @@ impl Channels {
     }
 
     /// AN4073: ADC Reading Dispersion can be reduced through Averaging
-    pub fn adc_read(&mut self, channel: usize, adc_read_target: PinsAdcReadTarget, avg_pt: u16) -> ElectricPotential {
+    pub fn adc_read(
+        &mut self,
+        channel: usize,
+        adc_read_target: PinsAdcReadTarget,
+        avg_pt: u16,
+    ) -> ElectricPotential {
         let mut sample: u32 = 0;
         match channel {
             0 => {
                 sample = match adc_read_target {
-                    PinsAdcReadTarget::VREF => {
-                        match &self.channel0.vref_pin {
-                            Channel0VRef::Analog(vref_pin) => {
-                                for _ in (0..avg_pt).rev() {
-                                    sample += self
-                                        .pins_adc
-                                        .convert(vref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                        as u32;
-                                }
-                                sample / avg_pt as u32
-                            },
-                            Channel0VRef::Disabled(_) => {2048 as u32}
+                    PinsAdcReadTarget::VREF => match &self.channel0.vref_pin {
+                        Channel0VRef::Analog(vref_pin) => {
+                            for _ in (0..avg_pt).rev() {
+                                sample += self.pins_adc.convert(
+                                    vref_pin,
+                                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                                ) as u32;
+                            }
+                            sample / avg_pt as u32
                         }
-                    }
+                        Channel0VRef::Disabled(_) => 2048 as u32,
+                    },
                     PinsAdcReadTarget::DacVfb => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel0.dac_feedback_pin,stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel0.dac_feedback_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
                     PinsAdcReadTarget::ITec => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel0.itec_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel0.itec_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
                     PinsAdcReadTarget::VTec => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel0.tec_u_meas_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel0.tec_u_meas_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
@@ -229,44 +237,42 @@ impl Channels {
             }
             1 => {
                 sample = match adc_read_target {
-                    PinsAdcReadTarget::VREF => {
-                        match &self.channel1.vref_pin {
-                            Channel1VRef::Analog(vref_pin) => {
-                                for _ in (0..avg_pt).rev() {
-                                    sample += self
-                                        .pins_adc
-                                        .convert(vref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                        as u32;
-                                }
-                                sample / avg_pt as u32
-                            },
-                            Channel1VRef::Disabled(_) => {2048 as u32}
+                    PinsAdcReadTarget::VREF => match &self.channel1.vref_pin {
+                        Channel1VRef::Analog(vref_pin) => {
+                            for _ in (0..avg_pt).rev() {
+                                sample += self.pins_adc.convert(
+                                    vref_pin,
+                                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                                ) as u32;
+                            }
+                            sample / avg_pt as u32
                         }
-                    }
+                        Channel1VRef::Disabled(_) => 2048 as u32,
+                    },
                     PinsAdcReadTarget::DacVfb => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel1.dac_feedback_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel1.dac_feedback_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
                     PinsAdcReadTarget::ITec => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel1.itec_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel1.itec_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
                     PinsAdcReadTarget::VTec => {
                         for _ in (0..avg_pt).rev() {
-                            sample += self
-                                .pins_adc
-                                .convert(&self.channel1.tec_u_meas_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480)
-                                as u32;
+                            sample += self.pins_adc.convert(
+                                &self.channel1.tec_u_meas_pin,
+                                stm32f4xx_hal::adc::config::SampleTime::Cycles_480,
+                            ) as u32;
                         }
                         sample / avg_pt as u32
                     }
@@ -274,7 +280,7 @@ impl Channels {
                 let mv = self.pins_adc.sample_to_millivolts(sample as u16);
                 ElectricPotential::new::<millivolt>(mv as f64)
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -282,18 +288,18 @@ impl Channels {
     ///
     /// The thermostat DAC applies a control voltage signal to the CTLI pin of MAX driver chip to control its output current.
     /// The CTLI input signal is centered around VREF of the MAX chip. Applying VREF to CTLI sets the output current to 0.
-    /// 
+    ///
     /// This calibration routine measures the VREF voltage and the DAC output with the STM32 ADC, and uses a breadth-first     
-    /// search to find the DAC setting that will produce a DAC output voltage closest to VREF. This DAC output voltage will 
-    /// be stored and used in subsequent i_set routines to bias the current control signal to the measured VREF, reducing 
+    /// search to find the DAC setting that will produce a DAC output voltage closest to VREF. This DAC output voltage will
+    /// be stored and used in subsequent i_set routines to bias the current control signal to the measured VREF, reducing
     /// the offset error of the current control signal.
     ///
     /// The input offset of the STM32 ADC is eliminated by using the same ADC for the measurements, and by only using the
     /// difference in VREF and DAC output for the calibration.
-    /// 
-    /// This routine should be called only once after boot, repeated reading of the vref signal and changing of the stored 
+    ///
+    /// This routine should be called only once after boot, repeated reading of the vref signal and changing of the stored
     /// VREF measurement can introduce significant noise at the current output, degrading the stabilily performance of the
-    /// thermostat. 
+    /// thermostat.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let samples = 50;
         let mut target_voltage = ElectricPotential::new::<volt>(0.0);
@@ -371,7 +377,9 @@ impl Channels {
 
     // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
-        let tec_i = (self.adc_read(channel, PinsAdcReadTarget::ITec, 16) - self.adc_read(channel, PinsAdcReadTarget::VREF, 16)) / ElectricalResistance::new::<ohm>(0.4);
+        let tec_i = (self.adc_read(channel, PinsAdcReadTarget::ITec, 16)
+            - self.adc_read(channel, PinsAdcReadTarget::VREF, 16))
+            / ElectricalResistance::new::<ohm>(0.4);
         match self.channel_state(channel).polarity {
             Polarity::Normal => tec_i,
             Polarity::Reversed => -tec_i,
@@ -380,37 +388,34 @@ impl Channels {
 
     // Get voltage across TEC
     pub fn get_tec_v(&mut self, channel: usize) -> ElectricPotential {
-        (self.adc_read(channel, PinsAdcReadTarget::VTec, 16) - ElectricPotential::new::<volt>(1.5)) * 4.0
+        (self.adc_read(channel, PinsAdcReadTarget::VTec, 16) - ElectricPotential::new::<volt>(1.5))
+            * 4.0
     }
 
     fn set_pwm(&mut self, channel: usize, pin: PwmPin, duty: f64) -> f64 {
-        fn set<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: f64) -> f64 {
+        fn set<P: hal::PwmPin<Duty = u16>>(pin: &mut P, duty: f64) -> f64 {
             let max = pin.get_max_duty();
             let value = ((duty * (max as f64)) as u16).min(max);
             pin.set_duty(value);
             value as f64 / (max as f64)
         }
         match (channel, pin) {
-            (_, PwmPin::ISet) =>
-                panic!("i_set is no pwm pin"),
-            (0, PwmPin::MaxIPos) =>
-                set(&mut self.pwm.max_i_pos0, duty),
-            (0, PwmPin::MaxINeg) =>
-                set(&mut self.pwm.max_i_neg0, duty),
-            (0, PwmPin::MaxV) =>
-                set(&mut self.pwm.max_v0, duty),
-            (1, PwmPin::MaxIPos) =>
-                set(&mut self.pwm.max_i_pos1, duty),
-            (1, PwmPin::MaxINeg) =>
-                set(&mut self.pwm.max_i_neg1, duty),
-            (1, PwmPin::MaxV) =>
-                set(&mut self.pwm.max_v1, duty),
-            _ =>
-                unreachable!(),
+            (_, PwmPin::ISet) => panic!("i_set is no pwm pin"),
+            (0, PwmPin::MaxIPos) => set(&mut self.pwm.max_i_pos0, duty),
+            (0, PwmPin::MaxINeg) => set(&mut self.pwm.max_i_neg0, duty),
+            (0, PwmPin::MaxV) => set(&mut self.pwm.max_v0, duty),
+            (1, PwmPin::MaxIPos) => set(&mut self.pwm.max_i_pos1, duty),
+            (1, PwmPin::MaxINeg) => set(&mut self.pwm.max_i_neg1, duty),
+            (1, PwmPin::MaxV) => set(&mut self.pwm.max_v1, duty),
+            _ => unreachable!(),
         }
     }
 
-    pub fn set_max_v(&mut self, channel: usize, max_v: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
+    pub fn set_max_v(
+        &mut self,
+        channel: usize,
+        max_v: ElectricPotential,
+    ) -> (ElectricPotential, ElectricPotential) {
         let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let max_v = max_v.min(MAX_TEC_V).max(ElectricPotential::zero());
         let duty = (max_v / max).get::<ratio>();
@@ -419,7 +424,11 @@ impl Channels {
         (duty * max, max)
     }
 
-    pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
+    pub fn set_max_i_pos(
+        &mut self,
+        channel: usize,
+        max_i_pos: ElectricCurrent,
+    ) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
         let duty = (max_i_pos / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
@@ -431,7 +440,11 @@ impl Channels {
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
     }
 
-    pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
+    pub fn set_max_i_neg(
+        &mut self,
+        channel: usize,
+        max_i_neg: ElectricCurrent,
+    ) -> (ElectricCurrent, ElectricCurrent) {
         let max = ElectricCurrent::new::<ampere>(3.0);
         let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
         let duty = (max_i_neg / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
@@ -469,7 +482,8 @@ impl Channels {
             interval: state.get_adc_interval(),
             adc: state.get_adc(),
             sens: state.get_sens(),
-            temperature: state.get_temperature()
+            temperature: state
+                .get_temperature()
                 .map(|temperature| temperature.get::<degree_celsius>()),
             pid_engaged: state.pid_engaged,
             i_set,
@@ -528,7 +542,10 @@ impl Channels {
     }
 
     fn postfilter_summary(&mut self, channel: usize) -> PostFilterSummary {
-        let rate = self.adc.get_postfilter(channel as u8).unwrap()
+        let rate = self
+            .adc
+            .get_postfilter(channel as u8)
+            .unwrap()
             .and_then(|filter| filter.output_rate());
         PostFilterSummary { channel, rate }
     }
@@ -546,7 +563,9 @@ impl Channels {
         SteinhartHartSummary { channel, params }
     }
 
-    pub fn steinhart_hart_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+    pub fn steinhart_hart_summaries_json(
+        &mut self,
+    ) -> Result<JsonBuffer, serde_json_core::ser::Error> {
         let mut summaries = Vec::<_, U2>::new();
         for channel in 0..CHANNELS {
             let _ = summaries.push(self.steinhart_hart_summary(channel));
@@ -589,10 +608,8 @@ impl Serialize for CenterPointJson {
         S: Serializer,
     {
         match self.0 {
-            CenterPoint::Vref =>
-                serializer.serialize_str("vref"),
-            CenterPoint::Override(vref) =>
-                serializer.serialize_f32(vref),
+            CenterPoint::Vref => serializer.serialize_str("vref"),
+            CenterPoint::Override(vref) => serializer.serialize_f32(vref),
         }
     }
 }

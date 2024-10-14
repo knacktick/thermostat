@@ -1,14 +1,11 @@
 use num_traits::float::Float;
+use serde::{Deserialize, Serialize};
 use uom::si::{
-    f64::{
-        ElectricalResistance,
-        ThermodynamicTemperature,
-    },
     electrical_resistance::ohm,
+    f64::{ElectricalResistance, ThermodynamicTemperature},
     ratio::ratio,
     thermodynamic_temperature::{degree_celsius, kelvin},
 };
-use serde::{Deserialize, Serialize};
 
 /// Steinhart-Hart equation parameters
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

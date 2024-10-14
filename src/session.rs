@@ -45,7 +45,8 @@ pub enum SessionInput {
 
 impl From<Result<Command, ParserError>> for SessionInput {
     fn from(input: Result<Command, ParserError>) -> Self {
-        input.map(SessionInput::Command)
+        input
+            .map(SessionInput::Command)
             .unwrap_or_else(SessionInput::Error)
     }
 }

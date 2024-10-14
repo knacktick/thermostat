@@ -1,24 +1,19 @@
-use smoltcp::time::{Duration, Instant};
-use uom::si::{
-    f64::{
-        ElectricPotential,
-        ElectricCurrent,
-        ElectricalResistance,
-        ThermodynamicTemperature,
-        Time,
-    },
-    electric_potential::volt,
-    electric_current::ampere,
-    electrical_resistance::ohm,
-    thermodynamic_temperature::degree_celsius,
-    time::millisecond,
-};
 use crate::{
     ad7172,
-    pid,
-    config::PwmLimits,
-    steinhart_hart as sh,
     command_parser::{CenterPoint, Polarity},
+    config::PwmLimits,
+    pid, steinhart_hart as sh,
+};
+use smoltcp::time::{Duration, Instant};
+use uom::si::{
+    electric_current::ampere,
+    electric_potential::volt,
+    electrical_resistance::ohm,
+    f64::{
+        ElectricCurrent, ElectricPotential, ElectricalResistance, ThermodynamicTemperature, Time,
+    },
+    thermodynamic_temperature::degree_celsius,
+    time::millisecond,
 };
 
 const R_INNER: f64 = 2.0 * 5100.0;
@@ -76,8 +71,7 @@ impl ChannelState {
 
     /// Update PID state on ADC input, calculate new DAC output
     pub fn update_pid(&mut self) -> Option<f64> {
-        let temperature = self.get_temperature()?
-            .get::<degree_celsius>();
+        let temperature = self.get_temperature()?.get::<degree_celsius>();
         let pid_output = self.pid.update(temperature);
         Some(pid_output)
     }

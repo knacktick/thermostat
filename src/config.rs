@@ -1,16 +1,15 @@
-use num_traits::Zero;
-use serde::{Serialize, Deserialize};
-use uom::si::{
-    electric_potential::volt,
-    electric_current::ampere,
-    f64::{ElectricCurrent, ElectricPotential},
-};
 use crate::{
     ad7172::PostFilter,
     channels::Channels,
     command_parser::{CenterPoint, Polarity},
-    pid,
-    steinhart_hart,
+    pid, steinhart_hart,
+};
+use num_traits::Zero;
+use serde::{Deserialize, Serialize};
+use uom::si::{
+    electric_current::ampere,
+    electric_potential::volt,
+    f64::{ElectricCurrent, ElectricPotential},
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -31,15 +30,17 @@ impl ChannelConfig {
     pub fn new(channels: &mut Channels, channel: usize) -> Self {
         let pwm = PwmLimits::new(channels, channel);
 
-        let adc_postfilter = channels.adc.get_postfilter(channel as u8)
+        let adc_postfilter = channels
+            .adc
+            .get_postfilter(channel as u8)
             .unwrap()
             .unwrap_or(PostFilter::Invalid);
 
         let state = channels.channel_state(channel);
-        let i_set = if state.pid_engaged { 
-            ElectricCurrent::zero() 
-        } else { 
-            state.i_set 
+        let i_set = if state.pid_engaged {
+            ElectricCurrent::zero()
+        } else {
+            state.i_set
         };
         ChannelConfig {
             center: state.center.clone(),

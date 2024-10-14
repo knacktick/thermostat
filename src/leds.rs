@@ -1,6 +1,6 @@
 use stm32f4xx_hal::{
     gpio::{
-        gpiod::{PD9, PD10, PD11},
+        gpiod::{PD10, PD11, PD9},
         Output, PushPull,
     },
     hal::digital::v2::OutputPin,

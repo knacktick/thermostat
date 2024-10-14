@@ -1,14 +1,10 @@
-use stm32f4xx_hal::hal::digital::v2::OutputPin;
-use uom::si::{
-    f64::ElectricPotential,
-    electric_potential::volt,
-};
 use crate::{
-    ad5680,
-    ad7172,
+    ad5680, ad7172,
     channel_state::ChannelState,
-    pins::{ChannelPins, ChannelPinSet},
+    pins::{ChannelPinSet, ChannelPins},
 };
+use stm32f4xx_hal::hal::digital::v2::OutputPin;
+use uom::si::{electric_potential::volt, f64::ElectricPotential};
 
 /// Marker type for the first channel
 pub struct Channel0;
@@ -40,7 +36,8 @@ impl<C: ChannelPins> Channel<C> {
 
         Channel {
             state,
-            dac, vref_meas,
+            dac,
+            vref_meas,
             shdn: pins.shdn,
             vref_pin: pins.vref_pin,
             itec_pin: pins.itec_pin,

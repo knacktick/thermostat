@@ -1,9 +1,9 @@
-use log::{info, error};
+use log::{error, info};
+use sfkv::{Store, StoreBackend};
 use stm32f4xx_hal::{
     flash::{Error, FlashExt},
     stm32::FLASH,
 };
-use sfkv::{Store, StoreBackend};
 
 /// 16 KiB
 pub const FLASH_SECTOR_SIZE: usize = 0x4000;
@@ -21,9 +21,7 @@ pub struct FlashBackend {
 }
 
 fn get_offset() -> usize {
-    unsafe {
-        (&_config_start as *const usize as usize) - (&_flash_start as *const usize as usize)
-    }    
+    unsafe { (&_config_start as *const usize as usize) - (&_flash_start as *const usize as usize) }
 }
 
 impl StoreBackend for FlashBackend {
@@ -40,7 +38,8 @@ impl StoreBackend for FlashBackend {
     }
 
     fn program(&mut self, offset: usize, payload: &[u8]) -> Result<(), Self::Error> {
-        self.flash.unlocked()
+        self.flash
+            .unlocked()
             .program(get_offset() + offset, payload.iter())
     }
 
@@ -60,7 +59,8 @@ pub fn store(flash: FLASH) -> FlashStore {
         Ok(_) => {}
         Err(e) => {
             error!("corrupt store, erasing. error: {:?}", e);
-            let _ = store.erase()
+            let _ = store
+                .erase()
                 .map_err(|e| error!("flash erase failed: {:?}", e));
         }
     }

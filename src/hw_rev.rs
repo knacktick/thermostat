@@ -1,9 +1,6 @@
 use serde::Serialize;
 
-use crate::{
-    pins::HWRevPins,
-    command_handler::JsonBuffer,
-};
+use crate::{command_handler::JsonBuffer, pins::HWRevPins};
 
 #[derive(Serialize, Copy, Clone)]
 pub struct HWRev {
@@ -31,13 +28,17 @@ struct HWSummary<'a> {
 
 impl HWRev {
     pub fn detect_hw_rev(hwrev_pins: &HWRevPins) -> Self {
-        let (h0, h1, h2, h3) = (hwrev_pins.hwrev0.is_high(), hwrev_pins.hwrev1.is_high(),
-                                hwrev_pins.hwrev2.is_high(), hwrev_pins.hwrev3.is_high());
+        let (h0, h1, h2, h3) = (
+            hwrev_pins.hwrev0.is_high(),
+            hwrev_pins.hwrev1.is_high(),
+            hwrev_pins.hwrev2.is_high(),
+            hwrev_pins.hwrev3.is_high(),
+        );
         match (h0, h1, h2, h3) {
             (true, true, true, false) => HWRev { major: 1, minor: 0 },
             (true, false, false, false) => HWRev { major: 2, minor: 0 },
             (false, true, false, false) => HWRev { major: 2, minor: 2 },
-            (_, _, _, _) => HWRev { major: 0, minor: 0 }
+            (_, _, _, _) => HWRev { major: 0, minor: 0 },
         }
     }
 
@@ -70,13 +71,16 @@ impl HWRev {
                 fan_pwm_freq_hz: 0,
                 fan_available: false,
                 fan_pwm_recommended: false,
-            }
+            },
         }
     }
 
     pub fn summary(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
         let settings = self.settings();
-        let summary = HWSummary { rev: self, settings: &settings };
+        let summary = HWSummary {
+            rev: self,
+            settings: &settings,
+        };
         serde_json_core::to_vec(&summary)
     }
 }

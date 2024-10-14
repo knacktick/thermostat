@@ -29,13 +29,13 @@ impl Checksum {
 
     fn feed_byte(&mut self, input: u8) {
         match self.mode {
-            ChecksumMode::Off => {},
+            ChecksumMode::Off => {}
             ChecksumMode::Xor => self.state ^= input,
             ChecksumMode::Crc => {
                 for i in 0..8 {
                     let input_mask = 0x80 >> i;
-                    self.state = (self.state << 1) ^
-                        if ((self.state & 0x80) != 0) != ((input & input_mask) != 0) {
+                    self.state = (self.state << 1)
+                        ^ if ((self.state & 0x80) != 0) != ((input & input_mask) != 0) {
                             0x07 /* x8 + x2 + x + 1 */
                         } else {
                             0
@@ -54,7 +54,7 @@ impl Checksum {
     pub fn result(&self) -> Option<u8> {
         match self.mode {
             ChecksumMode::Off => None,
-            _ => Some(self.state)
+            _ => Some(self.state),
         }
     }
 }

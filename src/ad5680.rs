@@ -1,12 +1,9 @@
-use stm32f4xx_hal::{
-    hal::{
-        blocking::spi::Transfer,
-        digital::v2::OutputPin,
-    },
-    time::MegaHertz,
-    spi,
-};
 use crate::timer::sleep;
+use stm32f4xx_hal::{
+    hal::{blocking::spi::Transfer, digital::v2::OutputPin},
+    spi,
+    time::MegaHertz,
+};
 
 /// SPI Mode 1
 pub const SPI_MODE: spi::Mode = spi::Mode {
@@ -27,11 +24,8 @@ pub struct Dac<SPI: Transfer<u8>, S: OutputPin> {
 impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
     pub fn new(spi: SPI, mut sync: S) -> Self {
         let _ = sync.set_low();
-        
-        Dac {
-            spi,
-            sync,
-        }
+
+        Dac { spi, sync }
     }
 
     fn write(&mut self, buf: &mut [u8]) -> Result<(), SPI::Error> {
@@ -47,11 +41,7 @@ impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
 
     pub fn set(&mut self, value: u32) -> Result<u32, SPI::Error> {
         let value = value.min(MAX_VALUE);
-        let mut buf = [
-            (value >> 14) as u8,
-            (value >> 6) as u8,
-            (value << 2) as u8,
-        ];
+        let mut buf = [(value >> 14) as u8, (value >> 6) as u8, (value << 2) as u8];
         self.write(&mut buf)?;
         Ok(value)
     }

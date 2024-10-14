@@ -1,18 +1,12 @@
+use super::{
+    checksum::{Checksum, ChecksumMode},
+    regs::{self, Register, RegisterData},
+    DigitalFilterOrder, Input, Mode, PostFilter, RefSource,
+};
 use core::fmt;
 use log::{info, warn};
-use stm32f4xx_hal::hal::{
-    blocking::spi::Transfer,
-    digital::v2::OutputPin,
-};
-use uom::si::{
-    f64::ElectricPotential,
-    electric_potential::volt,
-};
-use super::{
-    regs::{self, Register, RegisterData},
-    checksum::{ChecksumMode, Checksum},
-    Mode, Input, RefSource, PostFilter, DigitalFilterOrder,
-};
+use stm32f4xx_hal::hal::{blocking::spi::Transfer, digital::v2::OutputPin};
+use uom::si::{electric_potential::volt, f64::ElectricPotential};
 
 /// AD7172-2 implementation
 ///
@@ -27,7 +21,8 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     pub fn new(spi: SPI, mut nss: NSS) -> Result<Self, SPI::Error> {
         let _ = nss.set_high();
         let mut adc = Adc {
-            spi, nss,
+            spi,
+            nss,
             checksum_mode: ChecksumMode::Off,
         };
         adc.reset()?;
@@ -55,8 +50,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
 
     /// `0x00DX` for AD7172-2
     pub fn identify(&mut self) -> Result<u16, SPI::Error> {
-        self.read_reg(&regs::Id)
-            .map(|id| id.id())
+        self.read_reg(&regs::Id).map(|id| id.id())
     }
 
     pub fn set_checksum_mode(&mut self, mode: ChecksumMode) -> Result<(), SPI::Error> {
@@ -76,7 +70,10 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     pub fn setup_channel(
-        &mut self, index: u8, in_pos: Input, in_neg: Input
+        &mut self,
+        index: u8,
+        in_pos: Input,
+        in_neg: Input,
     ) -> Result<(), SPI::Error> {
         self.update_reg(&regs::SetupCon { index }, |data| {
             data.set_bipolar(false);
@@ -106,7 +103,11 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         let offset = self.read_reg(&regs::Offset { index })?.offset();
         let gain = self.read_reg(&regs::Gain { index })?.gain();
         let bipolar = self.read_reg(&regs::SetupCon { index })?.bipolar();
-        Ok(ChannelCalibration { offset, gain, bipolar })
+        Ok(ChannelCalibration {
+            offset,
+            gain,
+            bipolar,
+        })
     }
 
     pub fn start_continuous_conversion(&mut self) -> Result<(), SPI::Error> {
@@ -119,44 +120,43 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     pub fn get_postfilter(&mut self, index: u8) -> Result<Option<PostFilter>, SPI::Error> {
-        self.read_reg(&regs::FiltCon { index })
-            .map(|data| {
-                if data.enh_filt_en() {
-                    Some(data.enh_filt())
-                } else {
-                    None
-                }
-            })
+        self.read_reg(&regs::FiltCon { index }).map(|data| {
+            if data.enh_filt_en() {
+                Some(data.enh_filt())
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) -> Result<(), SPI::Error> {
-        self.update_reg(&regs::FiltCon { index }, |data| {
-            match filter {
-                None => data.set_enh_filt_en(false),
-                Some(filter) => {
-                    data.set_enh_filt_en(true);
-                    data.set_enh_filt(filter);
-                }
+    pub fn set_postfilter(
+        &mut self,
+        index: u8,
+        filter: Option<PostFilter>,
+    ) -> Result<(), SPI::Error> {
+        self.update_reg(&regs::FiltCon { index }, |data| match filter {
+            None => data.set_enh_filt_en(false),
+            Some(filter) => {
+                data.set_enh_filt_en(true);
+                data.set_enh_filt(filter);
             }
         })
     }
 
     /// Returns the channel the data is from
     pub fn data_ready(&mut self) -> Result<Option<u8>, SPI::Error> {
-        self.read_reg(&regs::Status)
-            .map(|status| {
-                if status.ready() {
-                    Some(status.channel())
-                } else {
-                    None
-                }
-            })
+        self.read_reg(&regs::Status).map(|status| {
+            if status.ready() {
+                Some(status.channel())
+            } else {
+                None
+            }
+        })
     }
 
     /// Get data
     pub fn read_data(&mut self) -> Result<u32, SPI::Error> {
-        self.read_reg(&regs::Data)
-            .map(|data| data.data())
+        self.read_reg(&regs::Data).map(|data| data.data())
     }
 
     fn read_reg<R: regs::Register>(&mut self, reg: &R) -> Result<R::Data, SPI::Error> {
@@ -175,12 +175,21 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
                 break;
             }
             // Retry
-            warn!("read_reg {:02X}: checksum error: {:?}!={:?}, retrying", reg.address(), checksum_expected, checksum_in);
+            warn!(
+                "read_reg {:02X}: checksum error: {:?}!={:?}, retrying",
+                reg.address(),
+                checksum_expected,
+                checksum_in
+            );
         }
         Ok(reg_data)
     }
 
-    fn write_reg<R: regs::Register>(&mut self, reg: &R, reg_data: &mut R::Data) -> Result<(), SPI::Error> {
+    fn write_reg<R: regs::Register>(
+        &mut self,
+        reg: &R,
+        reg_data: &mut R::Data,
+    ) -> Result<(), SPI::Error> {
         loop {
             let address = reg.address();
             let mut checksum = Checksum::new(match self.checksum_mode {
@@ -201,7 +210,10 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             if *readback_data == **reg_data {
                 return Ok(());
             }
-            warn!("write_reg {:02X}: readback error, {:?}!={:?}, retrying", address, &*readback_data, &**reg_data);
+            warn!(
+                "write_reg {:02X}: readback error, {:?}!={:?}, retrying",
+                address, &*readback_data, &**reg_data
+            );
         }
     }
 
@@ -225,7 +237,12 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    fn transfer<'w>(&mut self, addr: u8, reg_data: &'w mut [u8], checksum: Option<u8>) -> Result<Option<u8>, SPI::Error> {
+    fn transfer<'w>(
+        &mut self,
+        addr: u8,
+        reg_data: &'w mut [u8],
+        checksum: Option<u8>,
+    ) -> Result<Option<u8>, SPI::Error> {
         let mut addr_buf = [addr];
 
         let _ = self.nss.set_low();
@@ -234,8 +251,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             Err(e) => Err(e),
         };
         let result = match (result, checksum) {
-            (Ok(_), None) =>
-                Ok(None),
+            (Ok(_), None) => Ok(None),
             (Ok(_), Some(checksum_out)) => {
                 let mut checksum_buf = [checksum_out; 1];
                 match self.spi.transfer(&mut checksum_buf) {
@@ -243,8 +259,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
                     Err(e) => Err(e),
                 }
             }
-            (Err(e), _) =>
-                Err(e),
+            (Err(e), _) => Err(e),
         };
         let _ = self.nss.set_high();
 

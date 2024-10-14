@@ -14,7 +14,7 @@ pub unsafe fn set_dfu_trigger() {
 }
 
 /// Called by reset handler in lib.rs immediately after reset.
-/// This function should not be called outside of reset handler as 
+/// This function should not be called outside of reset handler as
 /// bootloader expects MCU to be in reset state when called.
 #[cfg(target_arch = "arm")]
 #[pre_init]
@@ -27,13 +27,13 @@ unsafe fn __pre_init() {
         rcc.apb2enr.modify(|_, w| w.syscfgen().set_bit());
 
         // Bypass BOOT pins and remap bootloader to 0x00000000
-        let syscfg = &*SYSCFG::ptr() ;
-        syscfg.memrm.write(|w| w.mem_mode().bits(0b01));  
+        let syscfg = &*SYSCFG::ptr();
+        syscfg.memrm.write(|w| w.mem_mode().bits(0b01));
 
         // Impose instruction and memory barriers
         cortex_m::asm::isb();
         cortex_m::asm::dsb();
-        
+
         asm!(
             // Set stack pointer to bootloader location
             "LDR R0, =0x1FFF0000",

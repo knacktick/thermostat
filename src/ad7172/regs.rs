@@ -1,6 +1,6 @@
-use core::ops::{Deref, DerefMut};
-use byteorder::{BigEndian, ByteOrder};
 use bit_field::BitField;
+use byteorder::{BigEndian, ByteOrder};
+use core::ops::{Deref, DerefMut};
 
 use super::*;
 
@@ -9,7 +9,7 @@ pub trait Register {
     fn address(&self) -> u8;
 }
 
-pub trait RegisterData: Clone + Deref<Target=[u8]> + DerefMut {
+pub trait RegisterData: Clone + Deref<Target = [u8]> + DerefMut {
     fn empty() -> Self;
 }
 
@@ -49,7 +49,9 @@ macro_rules! def_reg {
         }
     };
     ($Reg: ident, u8, $reg: ident, $addr: expr, $size: expr) => {
-        pub struct $Reg { pub index: u8, }
+        pub struct $Reg {
+            pub index: u8,
+        }
         impl Register for $Reg {
             type Data = $reg::Data;
             fn address(&self) -> u8 {
@@ -76,7 +78,7 @@ macro_rules! def_reg {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! reg_bit {
@@ -146,7 +148,7 @@ def_reg!(Status, status, 0x00, 1);
 impl status::Data {
     /// Is there new data to read?
     pub fn ready(&self) -> bool {
-        ! self.not_ready()
+        !self.not_ready()
     }
 
     reg_bit!(not_ready, 0, 7, "No data ready indicator");
@@ -159,9 +161,21 @@ impl status::Data {
 def_reg!(AdcMode, adc_mode, 0x01, 2);
 impl adc_mode::Data {
     reg_bits!(delay, set_delay, 0, 0..=2, "Delay after channel switch");
-    reg_bit!(sing_cyc, set_sing_cyc, 0, 5, "Can only used with single channel");
+    reg_bit!(
+        sing_cyc,
+        set_sing_cyc,
+        0,
+        5,
+        "Can only used with single channel"
+    );
     reg_bit!(hide_delay, set_hide_delay, 0, 6, "Hide delay");
-    reg_bit!(ref_en, set_ref_en, 0, 7, "Enable internal reference, output buffered 2.5 V to REFOUT");
+    reg_bit!(
+        ref_en,
+        set_ref_en,
+        0,
+        7,
+        "Enable internal reference, output buffered 2.5 V to REFOUT"
+    );
     reg_bits!(clockset, set_clocksel, 1, 2..=3, "Clock source");
     reg_bits!(mode, set_mode, 1, 4..=6, Mode, "Operating mode");
 }
@@ -174,15 +188,19 @@ impl if_mode::Data {
 def_reg!(Data, data, 0x04, 3);
 impl data::Data {
     pub fn data(&self) -> u32 {
-        (u32::from(self.0[0]) << 16) |
-        (u32::from(self.0[1]) << 8) |
-        u32::from(self.0[2])
+        (u32::from(self.0[0]) << 16) | (u32::from(self.0[1]) << 8) | u32::from(self.0[2])
     }
 }
 
 def_reg!(GpioCon, gpio_con, 0x06, 2);
 impl gpio_con::Data {
-    reg_bit!(sync_en, set_sync_en, 0, 3, "Enables the SYNC/ERROR pin as a sync input");
+    reg_bit!(
+        sync_en,
+        set_sync_en,
+        0,
+        3,
+        "Enables the SYNC/ERROR pin as a sync input"
+    );
 }
 
 def_reg!(Id, id, 0x07, 2);
@@ -200,8 +218,7 @@ impl channel::Data {
     /// Which input is connected to positive input of this channel
     #[allow(unused)]
     pub fn a_in_pos(&self) -> Input {
-        ((self.0[0].get_bits(0..=1) << 3) |
-         self.0[1].get_bits(5..=7)).into()
+        ((self.0[0].get_bits(0..=1) << 3) | self.0[1].get_bits(5..=7)).into()
     }
     /// Set which input is connected to positive input of this channel
     #[allow(unused)]
@@ -210,27 +227,66 @@ impl channel::Data {
         self.0[0].set_bits(0..=1, value >> 3);
         self.0[1].set_bits(5..=7, value & 0x7);
     }
-    reg_bits!(a_in_neg, set_a_in_neg, 1, 0..=4, Input,
-              "Which input is connected to negative input of this channel");
+    reg_bits!(
+        a_in_neg,
+        set_a_in_neg,
+        1,
+        0..=4,
+        Input,
+        "Which input is connected to negative input of this channel"
+    );
 }
 
 def_reg!(SetupCon, u8, setup_con, 0x20, 2);
 impl setup_con::Data {
-    reg_bit!(bipolar, set_bipolar, 0, 4, "Unipolar (`false`) or bipolar (`true`) coded output");
+    reg_bit!(
+        bipolar,
+        set_bipolar,
+        0,
+        4,
+        "Unipolar (`false`) or bipolar (`true`) coded output"
+    );
     reg_bit!(refbuf_pos, set_refbuf_pos, 0, 3, "Enable REF+ input buffer");
     reg_bit!(refbuf_neg, set_refbuf_neg, 0, 2, "Enable REF- input buffer");
     reg_bit!(ainbuf_pos, set_ainbuf_pos, 0, 1, "Enable AIN+ input buffer");
     reg_bit!(ainbuf_neg, set_ainbuf_neg, 0, 0, "Enable AIN- input buffer");
     reg_bit!(burnout_en, 1, 7, "enables a 10 µA current source on the positive analog input selected and a 10 µA current sink on the negative analog input selected");
-    reg_bits!(ref_sel, set_ref_sel, 1, 4..=5, RefSource, "Select reference source for conversion");
+    reg_bits!(
+        ref_sel,
+        set_ref_sel,
+        1,
+        4..=5,
+        RefSource,
+        "Select reference source for conversion"
+    );
 }
 
 def_reg!(FiltCon, u8, filt_con, 0x28, 2);
 impl filt_con::Data {
     reg_bit!(sinc3_map, 0, 7, "If set, mapping of filter register changes to directly program the decimation rate of the sinc3 filter");
-    reg_bit!(enh_filt_en, set_enh_filt_en, 0, 3, "Enable postfilters for enhanced 50Hz and 60Hz rejection");
-    reg_bits!(enh_filt, set_enh_filt, 0, 0..=2, PostFilter, "Select postfilters for enhanced 50Hz and 60Hz rejection");
-    reg_bits!(order, set_order, 1, 5..=6, DigitalFilterOrder, "order of the digital filter that processes the modulator data");
+    reg_bit!(
+        enh_filt_en,
+        set_enh_filt_en,
+        0,
+        3,
+        "Enable postfilters for enhanced 50Hz and 60Hz rejection"
+    );
+    reg_bits!(
+        enh_filt,
+        set_enh_filt,
+        0,
+        0..=2,
+        PostFilter,
+        "Select postfilters for enhanced 50Hz and 60Hz rejection"
+    );
+    reg_bits!(
+        order,
+        set_order,
+        1,
+        5..=6,
+        DigitalFilterOrder,
+        "order of the digital filter that processes the modulator data"
+    );
     reg_bits!(odr, set_odr, 1, 0..=4, "Output data rate");
 }
 
@@ -238,9 +294,7 @@ def_reg!(Offset, u8, offset, 0x30, 3);
 impl offset::Data {
     #[allow(unused)]
     pub fn offset(&self) -> u32 {
-        (u32::from(self.0[0]) << 16) |
-        (u32::from(self.0[1]) << 8) |
-        u32::from(self.0[2])
+        (u32::from(self.0[0]) << 16) | (u32::from(self.0[1]) << 8) | u32::from(self.0[2])
     }
     #[allow(unused)]
     pub fn set_offset(&mut self, value: u32) {
@@ -254,9 +308,7 @@ def_reg!(Gain, u8, gain, 0x38, 3);
 impl gain::Data {
     #[allow(unused)]
     pub fn gain(&self) -> u32 {
-        (u32::from(self.0[0]) << 16) |
-        (u32::from(self.0[1]) << 8) |
-        u32::from(self.0[2])
+        (u32::from(self.0[0]) << 16) | (u32::from(self.0[1]) << 8) | u32::from(self.0[2])
     }
     #[allow(unused)]
     pub fn set_gain(&mut self, value: u32) {

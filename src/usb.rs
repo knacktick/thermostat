@@ -1,15 +1,18 @@
-use core::{fmt::{self, Write}, mem::MaybeUninit};
+use core::{
+    fmt::{self, Write},
+    mem::MaybeUninit,
+};
 use cortex_m::interrupt::free;
+use log::{Log, Metadata, Record};
 use stm32f4xx_hal::{
-    otg_fs::{USB, UsbBus as Bus},
+    otg_fs::{UsbBus as Bus, USB},
     stm32::{interrupt, Interrupt, NVIC},
 };
 use usb_device::{
-    class_prelude::{UsbBusAllocator},
+    class_prelude::UsbBusAllocator,
     prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
 };
 use usbd_serial::SerialPort;
-use log::{Record, Log, Metadata};
 
 static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
@@ -36,8 +39,8 @@ impl State {
             .device_class(usbd_serial::USB_CLASS_CDC)
             .build();
 
-        free(|_| {
-            unsafe { STATE = Some(State { serial, dev }); }
+        free(|_| unsafe {
+            STATE = Some(State { serial, dev });
         });
 
         unsafe {
@@ -94,8 +97,7 @@ impl Write for SerialOutput {
     fn write_str(&mut self, s: &str) -> core::result::Result<(), core::fmt::Error> {
         if let Some(ref mut state) = State::get() {
             for chunk in s.as_bytes().chunks(16) {
-                free(|_| state.serial.write(chunk))
-                    .map_err(|_| fmt::Error)?;
+                free(|_| state.serial.write(chunk)).map_err(|_| fmt::Error)?;
             }
         }
         Ok(())

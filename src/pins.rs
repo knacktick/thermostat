@@ -1,49 +1,41 @@
+use crate::{
+    channel::{Channel0, Channel1},
+    fan_ctrl::FanPin,
+    hw_rev::{HWRev, HWSettings},
+    leds::Leds,
+};
+use eeprom24x::{self, Eeprom24x};
+use stm32_eth::EthPins;
 use stm32f4xx_hal::{
     adc::Adc,
     gpio::{
-        AF5, Alternate, AlternateOD, Analog, Floating, Input,
-        gpioa::*,
-        gpiob::*,
-        gpioc::*,
-        gpioe::*,
-        gpiof::*,
-        gpiog::*,
-        GpioExt,
-        Output, PushPull,
+        gpioa::*, gpiob::*, gpioc::*, gpioe::*, gpiof::*, gpiog::*, Alternate, AlternateOD, Analog,
+        Floating, GpioExt, Input, Output, PushPull, AF5,
     },
     hal::{self, blocking::spi::Transfer, digital::v2::OutputPin},
     i2c::I2c,
     otg_fs::USB,
-    rcc::Clocks,
-    pwm::{self, PwmChannels},
-    spi::{Spi, NoMiso, TransferModeNormal},
     pac::{
-        ADC1,
-        GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG,
-        I2C1,
-        OTG_FS_GLOBAL, OTG_FS_DEVICE, OTG_FS_PWRCLK,
-        SPI2, SPI4, SPI5,
-        TIM1, TIM3, TIM8
+        ADC1, GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, I2C1, OTG_FS_DEVICE, OTG_FS_GLOBAL,
+        OTG_FS_PWRCLK, SPI2, SPI4, SPI5, TIM1, TIM3, TIM8,
     },
-    timer::Timer,
+    pwm::{self, PwmChannels},
+    rcc::Clocks,
+    spi::{NoMiso, Spi, TransferModeNormal},
     time::U32Ext,
-};
-use eeprom24x::{self, Eeprom24x};
-use stm32_eth::EthPins;
-use crate::{
-    channel::{Channel0, Channel1},
-    leds::Leds,
-    fan_ctrl::FanPin,
-    hw_rev::{HWRev, HWSettings},
+    timer::Timer,
 };
 
 pub type Eeprom = Eeprom24x<
-    I2c<I2C1, (
-        PB8<AlternateOD<{ stm32f4xx_hal::gpio::AF4 }>>,
-        PB9<AlternateOD<{ stm32f4xx_hal::gpio::AF4 }>>
-    )>,
+    I2c<
+        I2C1,
+        (
+            PB8<AlternateOD<{ stm32f4xx_hal::gpio::AF4 }>>,
+            PB9<AlternateOD<{ stm32f4xx_hal::gpio::AF4 }>>,
+        ),
+    >,
     eeprom24x::page_size::B8,
-    eeprom24x::addr_size::OneByte
+    eeprom24x::addr_size::OneByte,
 >;
 
 pub type EthernetPins = EthPins<
@@ -54,7 +46,7 @@ pub type EthernetPins = EthPins<
     PB13<Input<Floating>>,
     PC4<Input<Floating>>,
     PC5<Input<Floating>>,
- >;
+>;
 
 pub trait ChannelPins {
     type DacSpi: Transfer<u8>;
@@ -97,7 +89,15 @@ impl ChannelPins for Channel1 {
 }
 
 /// SPI peripheral used for communication with the ADC
-pub type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Alternate<AF5>>), TransferModeNormal>;
+pub type AdcSpi = Spi<
+    SPI2,
+    (
+        PB10<Alternate<AF5>>,
+        PB14<Alternate<AF5>>,
+        PB15<Alternate<AF5>>,
+    ),
+    TransferModeNormal,
+>;
 pub type AdcNss = PB12<Output<PushPull>>;
 type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>), TransferModeNormal>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>), TransferModeNormal>;
@@ -133,13 +133,34 @@ impl Pins {
     /// Setup GPIO pins and configure MCU peripherals
     pub fn setup(
         clocks: Clocks,
-        tim1: TIM1, tim3: TIM3, tim8: TIM8,
-        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiod: GPIOD, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
+        tim1: TIM1,
+        tim3: TIM3,
+        tim8: TIM8,
+        gpioa: GPIOA,
+        gpiob: GPIOB,
+        gpioc: GPIOC,
+        gpiod: GPIOD,
+        gpioe: GPIOE,
+        gpiof: GPIOF,
+        gpiog: GPIOG,
         i2c1: I2C1,
-        spi2: SPI2, spi4: SPI4, spi5: SPI5,
+        spi2: SPI2,
+        spi4: SPI4,
+        spi5: SPI5,
         adc1: ADC1,
-        otg_fs_global: OTG_FS_GLOBAL, otg_fs_device: OTG_FS_DEVICE, otg_fs_pwrclk: OTG_FS_PWRCLK,
-    ) -> (Self, Leds, Eeprom, EthernetPins, USB, Option<FanPin>, HWRev, HWSettings) {
+        otg_fs_global: OTG_FS_GLOBAL,
+        otg_fs_device: OTG_FS_DEVICE,
+        otg_fs_pwrclk: OTG_FS_PWRCLK,
+    ) -> (
+        Self,
+        Leds,
+        Eeprom,
+        EthernetPins,
+        USB,
+        Option<FanPin>,
+        HWRev,
+        HWSettings,
+    ) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -154,23 +175,25 @@ impl Pins {
         let pins_adc = Adc::adc1(adc1, true, Default::default());
 
         let pwm = PwmPins::setup(
-            clocks, tim1, tim3,
-            gpioc.pc6, gpioc.pc7,
-            gpioe.pe9, gpioe.pe11,
-            gpioe.pe13, gpioe.pe14
+            clocks, tim1, tim3, gpioc.pc6, gpioc.pc7, gpioe.pe9, gpioe.pe11, gpioe.pe13, gpioe.pe14,
         );
 
-        let hwrev = HWRev::detect_hw_rev(&HWRevPins {hwrev0: gpiod.pd0, hwrev1: gpiod.pd1,
-            hwrev2: gpiod.pd2, hwrev3: gpiod.pd3});
+        let hwrev = HWRev::detect_hw_rev(&HWRevPins {
+            hwrev0: gpiod.pd0,
+            hwrev1: gpiod.pd1,
+            hwrev2: gpiod.pd2,
+            hwrev3: gpiod.pd3,
+        });
         let hw_settings = hwrev.settings();
 
-        let (dac0_spi, dac0_sync) = Self::setup_dac0(
-            clocks, spi4,
-            gpioe.pe2, gpioe.pe4, gpioe.pe6
-        );
+        let (dac0_spi, dac0_sync) = Self::setup_dac0(clocks, spi4, gpioe.pe2, gpioe.pe4, gpioe.pe6);
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
         let _ = shdn0.set_low();
-        let vref0_pin = if hwrev.major > 2 {Channel0VRef::Analog(gpioa.pa0.into_analog())} else {Channel0VRef::Disabled(gpioa.pa0)};
+        let vref0_pin = if hwrev.major > 2 {
+            Channel0VRef::Analog(gpioa.pa0.into_analog())
+        } else {
+            Channel0VRef::Disabled(gpioa.pa0)
+        };
         let itec0_pin = gpioa.pa6.into_analog();
         let dac_feedback0_pin = gpioa.pa4.into_analog();
         let tec_u_meas0_pin = gpioc.pc2.into_analog();
@@ -184,13 +207,14 @@ impl Pins {
             tec_u_meas_pin: tec_u_meas0_pin,
         };
 
-        let (dac1_spi, dac1_sync) = Self::setup_dac1(
-            clocks, spi5,
-            gpiof.pf7, gpiof.pf6, gpiof.pf9
-        );
+        let (dac1_spi, dac1_sync) = Self::setup_dac1(clocks, spi5, gpiof.pf7, gpiof.pf6, gpiof.pf9);
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
-        let vref1_pin = if hwrev.major > 2 {Channel1VRef::Analog(gpioa.pa3.into_analog())} else {Channel1VRef::Disabled(gpioa.pa3)};
+        let vref1_pin = if hwrev.major > 2 {
+            Channel1VRef::Analog(gpioa.pa3.into_analog())
+        } else {
+            Channel1VRef::Disabled(gpioa.pa3)
+        };
         let itec1_pin = gpiob.pb0.into_analog();
         let dac_feedback1_pin = gpioa.pa5.into_analog();
         let tec_u_meas1_pin = gpioc.pc3.into_analog();
@@ -205,14 +229,19 @@ impl Pins {
         };
 
         let pins = Pins {
-            adc_spi, adc_nss,
+            adc_spi,
+            adc_nss,
             pins_adc,
             pwm,
             channel0,
             channel1,
         };
 
-        let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
+        let leds = Leds::new(
+            gpiod.pd9,
+            gpiod.pd10.into_push_pull_output(),
+            gpiod.pd11.into_push_pull_output(),
+        );
 
         let eeprom_scl = gpiob.pb8.into_alternate().set_open_drain();
         let eeprom_sda = gpiob.pb9.into_alternate().set_open_drain();
@@ -239,8 +268,13 @@ impl Pins {
         };
 
         let fan = if hw_settings.fan_available {
-             Some(Timer::new(tim8, &clocks).pwm(gpioc.pc9.into_alternate(), hw_settings.fan_pwm_freq_hz.hz()))
-        } else { None };
+            Some(
+                Timer::new(tim8, &clocks)
+                    .pwm(gpioc.pc9.into_alternate(), hw_settings.fan_pwm_freq_hz.hz()),
+            )
+        } else {
+            None
+        };
 
         (pins, leds, eeprom, eth_pins, usb, fan, hwrev, hw_settings)
     }
@@ -252,8 +286,7 @@ impl Pins {
         sck: PB10<M1>,
         miso: PB14<M2>,
         mosi: PB15<M3>,
-    ) -> AdcSpi
-    {
+    ) -> AdcSpi {
         let sck = sck.into_alternate();
         let miso = miso.into_alternate();
         let mosi = mosi.into_alternate();
@@ -262,13 +295,16 @@ impl Pins {
             (sck, miso, mosi),
             crate::ad7172::SPI_MODE,
             crate::ad7172::SPI_CLOCK,
-            clocks
+            clocks,
         )
     }
 
     fn setup_dac0<M1, M2, M3>(
-        clocks: Clocks, spi4: SPI4,
-        sclk: PE2<M1>, sync: PE4<M2>, sdin: PE6<M3>
+        clocks: Clocks,
+        spi4: SPI4,
+        sclk: PE2<M1>,
+        sync: PE4<M2>,
+        sdin: PE6<M3>,
     ) -> (Dac0Spi, <Channel0 as ChannelPins>::DacSync) {
         let sclk = sclk.into_alternate();
         let sdin = sdin.into_alternate();
@@ -277,7 +313,7 @@ impl Pins {
             (sclk, NoMiso {}, sdin),
             crate::ad5680::SPI_MODE,
             crate::ad5680::SPI_CLOCK,
-            clocks
+            clocks,
         );
         let sync = sync.into_push_pull_output();
 
@@ -285,8 +321,11 @@ impl Pins {
     }
 
     fn setup_dac1<M1, M2, M3>(
-        clocks: Clocks, spi5: SPI5,
-        sclk: PF7<M1>, sync: PF6<M2>, sdin: PF9<M3>
+        clocks: Clocks,
+        spi5: SPI5,
+        sclk: PF7<M1>,
+        sync: PF6<M2>,
+        sdin: PF9<M3>,
     ) -> (Dac1Spi, <Channel1 as ChannelPins>::DacSync) {
         let sclk = sclk.into_alternate();
         let sdin = sdin.into_alternate();
@@ -295,7 +334,7 @@ impl Pins {
             (sclk, NoMiso {}, sdin),
             crate::ad5680::SPI_MODE,
             crate::ad5680::SPI_CLOCK,
-            clocks
+            clocks,
         );
         let sync = sync.into_push_pull_output();
 
@@ -326,14 +365,11 @@ impl PwmPins {
     ) -> PwmPins {
         let freq = 20u32.khz();
 
-        fn init_pwm_pin<P: hal::PwmPin<Duty=u16>>(pin: &mut P) {
+        fn init_pwm_pin<P: hal::PwmPin<Duty = u16>>(pin: &mut P) {
             pin.set_duty(0);
             pin.enable();
         }
-        let channels = (
-            max_v0.into_alternate(),
-            max_v1.into_alternate(),
-        );
+        let channels = (max_v0.into_alternate(), max_v1.into_alternate());
         //let (mut max_v0, mut max_v1) = pwm::tim3(tim3, channels, clocks, freq);
         let (mut max_v0, mut max_v1) = Timer::new(tim3, &clocks).pwm(channels, freq);
         init_pwm_pin(&mut max_v0);
@@ -353,9 +389,12 @@ impl PwmPins {
         init_pwm_pin(&mut max_i_neg1);
 
         PwmPins {
-            max_v0, max_v1,
-            max_i_pos0, max_i_pos1,
-            max_i_neg0, max_i_neg1,
+            max_v0,
+            max_v1,
+            max_i_pos0,
+            max_i_pos1,
+            max_i_neg0,
+            max_i_neg1,
         }
     }
 }

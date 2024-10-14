@@ -1,25 +1,29 @@
+use crate::command_parser::Ipv4Config;
+use crate::net::split_ipv4_config;
 use smoltcp::{
     iface::EthernetInterface,
-    socket::{SocketSet, SocketHandle, TcpSocket, TcpSocketBuffer, SocketRef},
+    socket::{SocketHandle, SocketRef, SocketSet, TcpSocket, TcpSocketBuffer},
     time::Instant,
     wire::{IpAddress, IpCidr, Ipv4Address, Ipv4Cidr},
 };
-use crate::command_parser::Ipv4Config;
-use crate::net::split_ipv4_config;
 
 pub struct SocketState<S> {
     handle: SocketHandle,
     state: S,
 }
 
-impl<'a, S: Default> SocketState<S>{
-    fn new(sockets: &mut SocketSet<'a>, tcp_rx_storage: &'a mut [u8; TCP_RX_BUFFER_SIZE], tcp_tx_storage: &'a mut [u8; TCP_TX_BUFFER_SIZE]) -> SocketState<S> {
+impl<'a, S: Default> SocketState<S> {
+    fn new(
+        sockets: &mut SocketSet<'a>,
+        tcp_rx_storage: &'a mut [u8; TCP_RX_BUFFER_SIZE],
+        tcp_tx_storage: &'a mut [u8; TCP_TX_BUFFER_SIZE],
+    ) -> SocketState<S> {
         let tcp_rx_buffer = TcpSocketBuffer::new(&mut tcp_rx_storage[..]);
         let tcp_tx_buffer = TcpSocketBuffer::new(&mut tcp_tx_storage[..]);
         let tcp_socket = TcpSocket::new(tcp_rx_buffer, tcp_tx_buffer);
         SocketState::<S> {
             handle: sockets.add(tcp_socket),
-            state: S::default()
+            state: S::default(),
         }
     }
 }
@@ -50,7 +54,7 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
             ($rx_storage:ident, $tx_storage:ident) => {
                 let mut $rx_storage = [0; TCP_RX_BUFFER_SIZE];
                 let mut $tx_storage = [0; TCP_TX_BUFFER_SIZE];
-            }
+            };
         }
 
         create_rtx_storage!(tcp_rx_storage0, tcp_tx_storage0);
@@ -103,7 +107,7 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
                     IpCidr::Ipv4(_) => {
                         *addr = IpCidr::Ipv4(ipv4_address);
                         // done
-                        break
+                        break;
                     }
                     _ => {
                         // skip
@@ -116,10 +120,9 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
     fn set_gateway(&mut self, gateway: Option<Ipv4Address>) {
         let routes = self.net.routes_mut();
         match gateway {
-            None =>
-                routes.update(|routes_storage| {
-                    routes_storage.remove(&IpCidr::new(IpAddress::v4(0, 0, 0, 0), 0));
-                }),
+            None => routes.update(|routes_storage| {
+                routes_storage.remove(&IpCidr::new(IpAddress::v4(0, 0, 0, 0), 0));
+            }),
             Some(gateway) => {
                 routes.add_default_ipv4_route(gateway).unwrap();
             }

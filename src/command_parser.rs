@@ -2,19 +2,20 @@ use core::fmt;
 use core::num::ParseIntError;
 use core::str::{from_utf8, Utf8Error};
 use nom::{
-    IResult,
     branch::alt,
     bytes::complete::{is_a, tag, take_while1},
-    character::{is_digit, complete::{char, one_of}},
+    character::{
+        complete::{char, one_of},
+        is_digit,
+    },
     combinator::{complete, map, opt, value},
-    sequence::preceded,
-    multi::{fold_many0, fold_many1},
     error::ErrorKind,
-    Needed,
+    multi::{fold_many0, fold_many1},
+    sequence::preceded,
+    IResult, Needed,
 };
 use num_traits::{Num, ParseFloatError};
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -30,12 +31,9 @@ pub enum Error {
 impl<'t> From<nom::Err<(&'t [u8], ErrorKind)>> for Error {
     fn from(e: nom::Err<(&'t [u8], ErrorKind)>) -> Self {
         match e {
-            nom::Err::Incomplete(_) =>
-                Error::Incomplete,
-            nom::Err::Error((_, e)) =>
-                Error::Parser(e),
-            nom::Err::Failure((_, e)) =>
-                Error::Parser(e),
+            nom::Err::Incomplete(_) => Error::Incomplete,
+            nom::Err::Error((_, e)) => Error::Parser(e),
+            nom::Err::Failure((_, e)) => Error::Parser(e),
         }
     }
 }
@@ -61,8 +59,7 @@ impl From<ParseFloatError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            Error::Incomplete =>
-                "incomplete input".fmt(fmt),
+            Error::Incomplete => "incomplete input".fmt(fmt),
             Error::UnexpectedInput(c) => {
                 "unexpected input: ".fmt(fmt)?;
                 c.fmt(fmt)
@@ -79,9 +76,7 @@ impl fmt::Display for Error {
                 "parsing int: ".fmt(fmt)?;
                 (e as &dyn core::fmt::Debug).fmt(fmt)
             }
-            Error::ParseFloat => {
-                "parsing float".fmt(fmt)
-            }
+            Error::ParseFloat => "parsing float".fmt(fmt),
         }
     }
 }
@@ -188,7 +183,7 @@ pub enum Command {
     },
     Dfu,
     FanSet {
-        fan_pwm: u32
+        fan_pwm: u32,
     },
     FanAuto,
     ShowFan,
@@ -202,12 +197,7 @@ pub enum Command {
 }
 
 fn end(input: &[u8]) -> IResult<&[u8], ()> {
-    complete(
-        fold_many0(
-            one_of("\r\n\t "),
-            (), |(), _| ()
-        )
-    )(input)
+    complete(fold_many0(one_of("\r\n\t "), (), |(), _| ()))(input)
 }
 
 fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
@@ -215,28 +205,21 @@ fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
 }
 
 fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
-    take_while1(is_digit)(input)
-        .map(|(input, digits)| {
-            let result =
-                from_utf8(digits)
-                .map_err(|e| e.into())
-                .and_then(|digits| u32::from_str_radix(digits, 10)
-                     .map_err(|e| e.into())
-                );
-            (input, result)
-        })
+    take_while1(is_digit)(input).map(|(input, digits)| {
+        let result = from_utf8(digits)
+            .map_err(|e| e.into())
+            .and_then(|digits| u32::from_str_radix(digits, 10).map_err(|e| e.into()));
+        (input, result)
+    })
 }
 
 fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
     let (input, sign) = opt(is_a("-"))(input)?;
     let negative = sign.is_some();
     let (input, digits) = take_while1(|c| is_digit(c) || c == '.' as u8)(input)?;
-    let result =
-        from_utf8(digits)
+    let result = from_utf8(digits)
         .map_err(|e| e.into())
-        .and_then(|digits| f64::from_str_radix(digits, 10)
-                  .map_err(|e| e.into())
-        )
+        .and_then(|digits| f64::from_str_radix(digits, 10).map_err(|e| e.into()))
         .map(|result: f64| if negative { -result } else { result });
     Ok((input, result))
 }
@@ -249,57 +232,32 @@ fn report(input: &[u8]) -> IResult<&[u8], Command> {
     preceded(
         tag("report"),
         // `report` - Report once
-        value(Command::Show(ShowCommand::Input), end)
+        value(Command::Show(ShowCommand::Input), end),
     )(input)
 }
 
 fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
-    let result_with_pin = |pin: PwmPin|
-        move |result: Result<f64, Error>|
-        result.map(|value| (pin, value));
+    let result_with_pin =
+        |pin: PwmPin| move |result: Result<f64, Error>| result.map(|value| (pin, value));
 
     alt((
         map(
-            preceded(
-                tag("i_set"),
-                preceded(
-                    whitespace,
-                    float
-                )
-            ),
-            result_with_pin(PwmPin::ISet)
+            preceded(tag("i_set"), preceded(whitespace, float)),
+            result_with_pin(PwmPin::ISet),
         ),
         map(
-            preceded(
-                tag("max_i_pos"),
-                preceded(
-                    whitespace,
-                    float
-                )
-            ),
-            result_with_pin(PwmPin::MaxIPos)
+            preceded(tag("max_i_pos"), preceded(whitespace, float)),
+            result_with_pin(PwmPin::MaxIPos),
         ),
         map(
-            preceded(
-                tag("max_i_neg"),
-                preceded(
-                    whitespace,
-                    float
-                )
-            ),
-            result_with_pin(PwmPin::MaxINeg)
+            preceded(tag("max_i_neg"), preceded(whitespace, float)),
+            result_with_pin(PwmPin::MaxINeg),
         ),
         map(
-            preceded(
-                tag("max_v"),
-                preceded(
-                    whitespace,
-                    float
-                )
-            ),
-            result_with_pin(PwmPin::MaxV)
-        ))
-    )(input)
+            preceded(tag("max_v"), preceded(whitespace, float)),
+            result_with_pin(PwmPin::MaxV),
+        ),
+    ))(input)
 }
 
 /// `pwm <0-1> pid` - Set PWM to be controlled by PID
@@ -312,10 +270,11 @@ fn pwm_polarity(input: &[u8]) -> IResult<&[u8], Polarity> {
         tag("polarity"),
         preceded(
             whitespace,
-            alt((value(Polarity::Normal, tag("normal")),
-                 value(Polarity::Reversed, tag("reversed"))
-            ))
-        )
+            alt((
+                value(Polarity::Normal, tag("normal")),
+                value(Polarity::Reversed, tag("reversed")),
+            )),
+        ),
     )(input)
 }
 
@@ -338,17 +297,22 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 |input| {
                     let (input, config) = pwm_setup(input)?;
                     match config {
-                        Ok((pin, value)) =>
-                            Ok((input, Ok(Command::Pwm { channel, pin, value }))),
-                        Err(e) =>
-                            Ok((input, Err(e))),
+                        Ok((pin, value)) => Ok((
+                            input,
+                            Ok(Command::Pwm {
+                                channel,
+                                pin,
+                                value,
+                            }),
+                        )),
+                        Err(e) => Ok((input, Err(e))),
                     }
                 },
             ))(input)?;
             end(input)?;
             Ok((input, result))
         },
-        value(Ok(Command::Show(ShowCommand::Pwm)), end)
+        value(Ok(Command::Show(ShowCommand::Pwm)), end),
     ))(input)
 }
 
@@ -357,36 +321,39 @@ fn center_point(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = whitespace(input)?;
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
-    let (input, center) = alt((
-        value(Ok(CenterPoint::Vref), tag("vref")),
-        |input| {
-            let (input, value) = float(input)?;
-            Ok((input, value.map(|value| CenterPoint::Override(value as f32))))
-        }
-    ))(input)?;
+    let (input, center) = alt((value(Ok(CenterPoint::Vref), tag("vref")), |input| {
+        let (input, value) = float(input)?;
+        Ok((
+            input,
+            value.map(|value| CenterPoint::Override(value as f32)),
+        ))
+    }))(input)?;
     end(input)?;
-    Ok((input, center.map(|center| Command::CenterPoint {
-        channel,
-        center,
-    })))
+    Ok((
+        input,
+        center.map(|center| Command::CenterPoint { channel, center }),
+    ))
 }
 
 /// `pid <0-1> <parameter> <value>`
 fn pid_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
-    let (input, parameter) =
-        alt((value(PidParameter::Target, tag("target")),
-             value(PidParameter::KP, tag("kp")),
-             value(PidParameter::KI, tag("ki")),
-             value(PidParameter::KD, tag("kd")),
-             value(PidParameter::OutputMin, tag("output_min")),
-             value(PidParameter::OutputMax, tag("output_max")),
-        ))(input)?;
+    let (input, parameter) = alt((
+        value(PidParameter::Target, tag("target")),
+        value(PidParameter::KP, tag("kp")),
+        value(PidParameter::KI, tag("ki")),
+        value(PidParameter::KD, tag("kd")),
+        value(PidParameter::OutputMin, tag("output_min")),
+        value(PidParameter::OutputMax, tag("output_max")),
+    ))(input)?;
     let (input, _) = whitespace(input)?;
     let (input, value) = float(input)?;
-    let result = value
-        .map(|value| Command::Pid { channel, parameter, value });
+    let result = value.map(|value| Command::Pid {
+        channel,
+        parameter,
+        value,
+    });
     Ok((input, result))
 }
 
@@ -394,11 +361,8 @@ fn pid_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 fn pid(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("pid")(input)?;
     alt((
-        preceded(
-            whitespace,
-            pid_parameter
-        ),
-        value(Ok(Command::Show(ShowCommand::Pid)), end)
+        preceded(whitespace, pid_parameter),
+        value(Ok(Command::Show(ShowCommand::Pid)), end),
     ))(input)
 }
 
@@ -406,15 +370,18 @@ fn pid(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
-    let (input, parameter) =
-        alt((value(ShParameter::T0, tag("t0")),
-             value(ShParameter::B, tag("b")),
-             value(ShParameter::R0, tag("r0"))
-        ))(input)?;
+    let (input, parameter) = alt((
+        value(ShParameter::T0, tag("t0")),
+        value(ShParameter::B, tag("b")),
+        value(ShParameter::R0, tag("r0")),
+    ))(input)?;
     let (input, _) = whitespace(input)?;
     let (input, value) = float(input)?;
-    let result = value
-        .map(|value| Command::SteinhartHart { channel, parameter, value });
+    let result = value.map(|value| Command::SteinhartHart {
+        channel,
+        parameter,
+        value,
+    });
     Ok((input, result))
 }
 
@@ -422,42 +389,38 @@ fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Erro
 fn steinhart_hart(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("s-h")(input)?;
     alt((
-        preceded(
-            whitespace,
-            steinhart_hart_parameter
-        ),
-        value(Ok(Command::Show(ShowCommand::SteinhartHart)), end)
+        preceded(whitespace, steinhart_hart_parameter),
+        value(Ok(Command::Show(ShowCommand::SteinhartHart)), end),
     ))(input)
 }
 
 fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("postfilter")(input)?;
     alt((
-        preceded(
-            whitespace,
-            |input| {
-                let (input, channel) = channel(input)?;
-                let (input, _) = whitespace(input)?;
-                alt((
-                    value(Ok(Command::PostFilter {
+        preceded(whitespace, |input| {
+            let (input, channel) = channel(input)?;
+            let (input, _) = whitespace(input)?;
+            alt((
+                value(
+                    Ok(Command::PostFilter {
                         channel,
                         rate: None,
-                    }), tag("off")),
-                    move |input| {
-                        let (input, _) = tag("rate")(input)?;
-                        let (input, _) = whitespace(input)?;
-                        let (input, rate) = float(input)?;
-                        let result = rate
-                            .map(|rate| Command::PostFilter {
-                                channel,
-                                rate: Some(rate as f32),
-                            });
-                        Ok((input, result))
-                    }
-                ))(input)
-            }
-        ),
-        value(Ok(Command::Show(ShowCommand::PostFilter)), end)
+                    }),
+                    tag("off"),
+                ),
+                move |input| {
+                    let (input, _) = tag("rate")(input)?;
+                    let (input, _) = whitespace(input)?;
+                    let (input, rate) = float(input)?;
+                    let result = rate.map(|rate| Command::PostFilter {
+                        channel,
+                        rate: Some(rate as f32),
+                    });
+                    Ok((input, result))
+                },
+            ))(input)
+        }),
+        value(Ok(Command::Show(ShowCommand::PostFilter)), end),
     ))(input)
 }
 
@@ -470,7 +433,7 @@ fn load(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             let (input, _) = end(input)?;
             Ok((input, Some(channel)))
         },
-        value(None, end)
+        value(None, end),
     ))(input)?;
 
     let result = Ok(Command::Load { channel });
@@ -486,7 +449,7 @@ fn save(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             let (input, _) = end(input)?;
             Ok((input, Some(channel)))
         },
-        value(None, end)
+        value(None, end),
     ))(input)?;
 
     let result = Ok(Command::Save { channel });
@@ -548,12 +511,17 @@ fn fan(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 },
                 |input| {
                     let (input, value) = unsigned(input)?;
-                    Ok((input, Ok(Command::FanSet { fan_pwm: value.unwrap_or(0)})))
+                    Ok((
+                        input,
+                        Ok(Command::FanSet {
+                            fan_pwm: value.unwrap_or(0),
+                        }),
+                    ))
                 },
             ))(input)?;
             Ok((input, result))
         },
-        value(Ok(Command::ShowFan), end)
+        value(Ok(Command::ShowFan), end),
     ))(input)
 }
 
@@ -574,7 +542,14 @@ fn fan_curve(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                     let (input, _) = whitespace(input)?;
                     let (input, k_c) = float(input)?;
                     if k_a.is_ok() && k_b.is_ok() && k_c.is_ok() {
-                        Ok((input, Ok(Command::FanCurve { k_a: k_a.unwrap() as f32, k_b: k_b.unwrap() as f32, k_c: k_c.unwrap() as f32 })))
+                        Ok((
+                            input,
+                            Ok(Command::FanCurve {
+                                k_a: k_a.unwrap() as f32,
+                                k_b: k_b.unwrap() as f32,
+                                k_c: k_c.unwrap() as f32,
+                            }),
+                        ))
                     } else {
                         Err(nom::Err::Incomplete(Needed::Size(3)))
                     }
@@ -582,38 +557,36 @@ fn fan_curve(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             ))(input)?;
             Ok((input, result))
         },
-        value(Err(Error::Incomplete), end)
+        value(Err(Error::Incomplete), end),
     ))(input)
 }
 
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-    alt((value(Ok(Command::Quit), tag("quit")),
-         load,
-         save,
-         value(Ok(Command::Reset), tag("reset")),
-         ipv4,
-         map(report, Ok),
-         pwm,
-         center_point,
-         pid,
-         steinhart_hart,
-         postfilter,
-         value(Ok(Command::Dfu), tag("dfu")),
-         fan,
-         fan_curve,
-         value(Ok(Command::ShowHWRev), tag("hwrev")),
+    alt((
+        value(Ok(Command::Quit), tag("quit")),
+        load,
+        save,
+        value(Ok(Command::Reset), tag("reset")),
+        ipv4,
+        map(report, Ok),
+        pwm,
+        center_point,
+        pid,
+        steinhart_hart,
+        postfilter,
+        value(Ok(Command::Dfu), tag("dfu")),
+        fan,
+        fan_curve,
+        value(Ok(Command::ShowHWRev), tag("hwrev")),
     ))(input)
 }
 
 impl Command {
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         match command(input) {
-            Ok((input_remain, result)) if input_remain.len() == 0 =>
-                result,
-            Ok((input_remain, _)) =>
-                Err(Error::UnexpectedInput(input_remain[0])),
-            Err(e) =>
-                Err(e.into()),
+            Ok((input_remain, result)) if input_remain.len() == 0 => result,
+            Ok((input_remain, _)) => Err(Error::UnexpectedInput(input_remain[0])),
+            Err(e) => Err(e.into()),
         }
     }
 }
@@ -661,21 +634,27 @@ mod test {
     #[test]
     fn parse_ipv4() {
         let command = Command::parse(b"ipv4 192.168.1.26/24");
-        assert_eq!(command, Ok(Command::Ipv4(Ipv4Config {
-            address: [192, 168, 1, 26],
-            mask_len: 24,
-            gateway: None,
-        })));
+        assert_eq!(
+            command,
+            Ok(Command::Ipv4(Ipv4Config {
+                address: [192, 168, 1, 26],
+                mask_len: 24,
+                gateway: None,
+            }))
+        );
     }
 
     #[test]
     fn parse_ipv4_and_gateway() {
         let command = Command::parse(b"ipv4 10.42.0.126/8 10.1.0.1");
-        assert_eq!(command, Ok(Command::Ipv4(Ipv4Config {
-            address: [10, 42, 0, 126],
-            mask_len: 8,
-            gateway: Some([10, 1, 0, 1]),
-        })));
+        assert_eq!(
+            command,
+            Ok(Command::Ipv4(Ipv4Config {
+                address: [10, 42, 0, 126],
+                mask_len: 8,
+                gateway: Some([10, 1, 0, 1]),
+            }))
+        );
     }
 
     #[test]
@@ -687,58 +666,71 @@ mod test {
     #[test]
     fn parse_pwm_i_set() {
         let command = Command::parse(b"pwm 1 i_set 16383");
-        assert_eq!(command, Ok(Command::Pwm {
-            channel: 1,
-            pin: PwmPin::ISet,
-            value: 16383.0,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::Pwm {
+                channel: 1,
+                pin: PwmPin::ISet,
+                value: 16383.0,
+            })
+        );
     }
 
     #[test]
     fn parse_pwm_polarity() {
         let command = Command::parse(b"pwm 0 polarity reversed");
-        assert_eq!(command, Ok(Command::PwmPolarity {
-            channel: 0,
-            polarity: Polarity::Reversed,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::PwmPolarity {
+                channel: 0,
+                polarity: Polarity::Reversed,
+            })
+        );
     }
 
     #[test]
     fn parse_pwm_pid() {
         let command = Command::parse(b"pwm 0 pid");
-        assert_eq!(command, Ok(Command::PwmPid {
-            channel: 0,
-        }));
+        assert_eq!(command, Ok(Command::PwmPid { channel: 0 }));
     }
 
     #[test]
     fn parse_pwm_max_i_pos() {
         let command = Command::parse(b"pwm 0 max_i_pos 7");
-        assert_eq!(command, Ok(Command::Pwm {
-            channel: 0,
-            pin: PwmPin::MaxIPos,
-            value: 7.0,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::Pwm {
+                channel: 0,
+                pin: PwmPin::MaxIPos,
+                value: 7.0,
+            })
+        );
     }
 
     #[test]
     fn parse_pwm_max_i_neg() {
         let command = Command::parse(b"pwm 0 max_i_neg 128");
-        assert_eq!(command, Ok(Command::Pwm {
-            channel: 0,
-            pin: PwmPin::MaxINeg,
-            value: 128.0,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::Pwm {
+                channel: 0,
+                pin: PwmPin::MaxINeg,
+                value: 128.0,
+            })
+        );
     }
 
     #[test]
     fn parse_pwm_max_v() {
         let command = Command::parse(b"pwm 0 max_v 32768");
-        assert_eq!(command, Ok(Command::Pwm {
-            channel: 0,
-            pin: PwmPin::MaxV,
-            value: 32768.0,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::Pwm {
+                channel: 0,
+                pin: PwmPin::MaxV,
+                value: 32768.0,
+            })
+        );
     }
 
     #[test]
@@ -750,11 +742,14 @@ mod test {
     #[test]
     fn parse_pid_target() {
         let command = Command::parse(b"pid 0 target 36.5");
-        assert_eq!(command, Ok(Command::Pid {
-            channel: 0,
-            parameter: PidParameter::Target,
-            value: 36.5,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::Pid {
+                channel: 0,
+                parameter: PidParameter::Target,
+                value: 36.5,
+            })
+        );
     }
 
     #[test]
@@ -766,11 +761,14 @@ mod test {
     #[test]
     fn parse_steinhart_hart_set() {
         let command = Command::parse(b"s-h 1 t0 23.05");
-        assert_eq!(command, Ok(Command::SteinhartHart {
-            channel: 1,
-            parameter: ShParameter::T0,
-            value: 23.05,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::SteinhartHart {
+                channel: 1,
+                parameter: ShParameter::T0,
+                value: 23.05,
+            })
+        );
     }
 
     #[test]
@@ -782,37 +780,49 @@ mod test {
     #[test]
     fn parse_postfilter_off() {
         let command = Command::parse(b"postfilter 1 off");
-        assert_eq!(command, Ok(Command::PostFilter {
-            channel: 1,
-            rate: None,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::PostFilter {
+                channel: 1,
+                rate: None,
+            })
+        );
     }
 
     #[test]
     fn parse_postfilter_rate() {
         let command = Command::parse(b"postfilter 0 rate 21");
-        assert_eq!(command, Ok(Command::PostFilter {
-            channel: 0,
-            rate: Some(21.0),
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::PostFilter {
+                channel: 0,
+                rate: Some(21.0),
+            })
+        );
     }
 
     #[test]
     fn parse_center_point() {
         let command = Command::parse(b"center 0 1.5");
-        assert_eq!(command, Ok(Command::CenterPoint {
-            channel: 0,
-            center: CenterPoint::Override(1.5),
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::CenterPoint {
+                channel: 0,
+                center: CenterPoint::Override(1.5),
+            })
+        );
     }
 
     #[test]
     fn parse_center_point_vref() {
         let command = Command::parse(b"center 1 vref");
-        assert_eq!(command, Ok(Command::CenterPoint {
-            channel: 1,
-            center: CenterPoint::Vref,
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::CenterPoint {
+                channel: 1,
+                center: CenterPoint::Vref,
+            })
+        );
     }
 
     #[test]
@@ -824,7 +834,7 @@ mod test {
     #[test]
     fn parse_fan_set() {
         let command = Command::parse(b"fan 42");
-        assert_eq!(command, Ok(Command::FanSet {fan_pwm: 42}));
+        assert_eq!(command, Ok(Command::FanSet { fan_pwm: 42 }));
     }
 
     #[test]
@@ -836,11 +846,14 @@ mod test {
     #[test]
     fn parse_fcurve_set() {
         let command = Command::parse(b"fcurve 1.2 3.4 5.6");
-        assert_eq!(command, Ok(Command::FanCurve {
-            k_a: 1.2,
-            k_b: 3.4,
-            k_c: 5.6
-        }));
+        assert_eq!(
+            command,
+            Ok(Command::FanCurve {
+                k_a: 1.2,
+                k_b: 3.4,
+                k_c: 5.6
+            })
+        );
     }
 
     #[test]

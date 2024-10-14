@@ -1,20 +1,17 @@
 //! As there is only one peripheral, supporting data structures are
 //! declared once and globally.
 
-use core::cell::RefCell;
-use cortex_m::interrupt::{CriticalSection, Mutex};
-use stm32f4xx_hal::{
-    rcc::Clocks,
-    pac::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
-};
-use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
-use smoltcp::iface::{
-    EthernetInterfaceBuilder, EthernetInterface,
-    NeighborCache, Routes,
-};
-use stm32_eth::{Eth, RingEntry, RxDescriptor, TxDescriptor};
 use crate::command_parser::Ipv4Config;
 use crate::pins::EthernetPins;
+use core::cell::RefCell;
+use cortex_m::interrupt::{CriticalSection, Mutex};
+use smoltcp::iface::{EthernetInterface, EthernetInterfaceBuilder, NeighborCache, Routes};
+use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
+use stm32_eth::{Eth, RingEntry, RxDescriptor, TxDescriptor};
+use stm32f4xx_hal::{
+    pac::{interrupt, Peripherals, ETHERNET_DMA, ETHERNET_MAC},
+    rcc::Clocks,
+};
 
 /// Not on the stack so that stack can be placed in CCMRAM (which the
 /// ethernet peripheral cannot access)
@@ -30,27 +27,27 @@ static NET_PENDING: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
 /// Run callback `f` with ethernet driver and TCP/IP stack
 pub fn run<F>(
     clocks: Clocks,
-    ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
+    ethernet_mac: ETHERNET_MAC,
+    ethernet_dma: ETHERNET_DMA,
     eth_pins: EthernetPins,
     ethernet_addr: EthernetAddress,
     ipv4_config: Ipv4Config,
-    f: F
+    f: F,
 ) where
     F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
 {
-    let rx_ring = unsafe {
-        RX_RING.get_or_insert(Default::default())
-    };
-    let tx_ring = unsafe {
-        TX_RING.get_or_insert(Default::default())
-    };
+    let rx_ring = unsafe { RX_RING.get_or_insert(Default::default()) };
+    let tx_ring = unsafe { TX_RING.get_or_insert(Default::default()) };
     // Ethernet driver
     let mut eth_dev = Eth::new(
-        ethernet_mac, ethernet_dma,
-        &mut rx_ring[..], &mut tx_ring[..],
+        ethernet_mac,
+        ethernet_dma,
+        &mut rx_ring[..],
+        &mut tx_ring[..],
         clocks,
         eth_pins,
-    ).unwrap();
+    )
+    .unwrap();
     eth_dev.enable_interrupt();
 
     // IP stack
@@ -76,8 +73,7 @@ pub fn run<F>(
 #[interrupt]
 fn ETH() {
     cortex_m::interrupt::free(|cs| {
-        *NET_PENDING.borrow(cs)
-            .borrow_mut() = true;
+        *NET_PENDING.borrow(cs).borrow_mut() = true;
     });
 
     let p = unsafe { Peripherals::steal() };
@@ -86,15 +82,13 @@ fn ETH() {
 
 /// Has an interrupt occurred since last call to `clear_pending()`?
 pub fn is_pending(cs: &CriticalSection) -> bool {
-    *NET_PENDING.borrow(cs)
-        .borrow()
+    *NET_PENDING.borrow(cs).borrow()
 }
 
 /// Clear the interrupt pending flag before polling the interface for
 /// data.
 pub fn clear_pending(cs: &CriticalSection) {
-    *NET_PENDING.borrow(cs)
-        .borrow_mut() = false;
+    *NET_PENDING.borrow(cs).borrow_mut() = false;
 }
 
 /// utility for destructuring into smoltcp types
