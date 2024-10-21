@@ -678,7 +678,7 @@ mod test {
 
     #[test]
     fn parse_output_polarity() {
-        let command = Command::parse(b"pwm 0 polarity reversed");
+        let command = Command::parse(b"output 0 polarity reversed");
         assert_eq!(
             command,
             Ok(Command::OutputPolarity {
