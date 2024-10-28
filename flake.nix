@@ -64,15 +64,22 @@
         format = "pyproject";
         src = "${self}/pythermostat";
 
+        nativeBuildInputs = [ pkgs.qt6.wrapQtAppsHook ];
         propagatedBuildInputs =
-          with pkgs.python3Packages; [
+          [ pkgs.qt6.qtbase ]
+          ++ (with pkgs.python3Packages; [
             numpy
             matplotlib
             pyqtgraph
             pyqt6
             qasync
             pglive
-          ];
+          ]);
+
+        dontWrapQtApps = true;
+        postFixup = ''
+          wrapQtApp "$out/bin/thermostat_qt"
+        '';
       };
 
       pglive = pkgs.python3Packages.buildPythonPackage rec {
@@ -94,6 +101,11 @@
       packages.x86_64-linux = {
         inherit thermostat pythermostat;
         default = thermostat;
+      };
+
+      apps.x86_64-linux.thermostat_gui = {
+        type = "app";
+        program = "${self.packages.x86_64-linux.pythermostat}/bin/thermostat_qt";
       };
 
       hydraJobs = {

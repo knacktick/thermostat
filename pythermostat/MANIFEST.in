@@ -1,0 +1,4 @@
+graft examples
+include pythermostat/gui/resources/artiq.svg
+include pythermostat/gui/view/param_tree.json
+include pythermostat/gui/view/MainWindow.ui

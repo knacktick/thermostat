@@ -11,11 +11,16 @@ urls.Repository = "https://git.m-labs.hk/M-Labs/thermostat"
 license = {text = "GPLv3"}
 dependencies = [
     "numpy >= 1.26.4",
-    "matplotlib >= 3.9.2"
+    "matplotlib >= 3.9.2",
+    "pyqtgraph >= 0.13.7",
+    "pyqt6 >= 6.8.0",
+    "qasync >= 0.27.1",
+    "pglive >= 0.7.2",
 ]
 
 [project.gui-scripts]
 thermostat_plot = "pythermostat.plot:main"
+thermostat_qt = "pythermostat.thermostat_qt:main"
 
 [project.scripts]
 thermostat_autotune = "pythermostat.autotune:main"
