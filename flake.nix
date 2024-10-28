@@ -2,14 +2,22 @@
   description = "Firmware for the Sinara 8451 Thermostat";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-  inputs.rust-overlay = { 
+  inputs.rust-overlay = {
     url = "github:oxalica/rust-overlay";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, rust-overlay }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      rust-overlay,
+    }:
     let
-      pkgs = import nixpkgs { system = "x86_64-linux"; overlays = [ (import rust-overlay) ]; };
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        overlays = [ (import rust-overlay) ];
+      };
 
       rust = pkgs.rust-bin.stable."1.66.0".default.override {
         extensions = [ "rust-src" ];
@@ -25,7 +33,7 @@
         version = "0.0.0";
 
         src = self;
-        cargoLock = { 
+        cargoLock = {
           lockFile = ./Cargo.lock;
           outputHashes = {
             "stm32-eth-0.2.0" = "sha256-48RpZgagUqgVeKm7GXdk3Oo0v19ScF9Uby0nTFlve2o=";
@@ -49,7 +57,8 @@
         dontFixup = true;
         auditable = false;
       };
-    in {
+    in
+    {
       packages.x86_64-linux = {
         inherit thermostat;
         default = thermostat;
@@ -61,12 +70,21 @@
 
       devShells.x86_64-linux.default = pkgs.mkShellNoCC {
         name = "thermostat-dev-shell";
-        packages = with pkgs; [
-          rust llvm
-          openocd dfu-util rlwrap
-          ] ++ (with python3Packages; [
-            numpy matplotlib
+        packages =
+          with pkgs;
+          [
+            rust
+            llvm
+            openocd
+            dfu-util
+            rlwrap
+          ]
+          ++ (with python3Packages; [
+            numpy
+            matplotlib
           ]);
       };
+
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
     };
 }
