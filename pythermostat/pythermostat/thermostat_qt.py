@@ -13,6 +13,7 @@ from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionSt
 from pythermostat.gui.model.pid_autotuner import PIDAutoTuner
 from pythermostat.gui.view.connection_details_menu import ConnectionDetailsMenu
 from pythermostat.gui.view.info_box import InfoBox
+from pythermostat.gui.view.live_plot_view import LiveDataPlotter
 from pythermostat.gui.view.zero_limits_warning_view import ZeroLimitsWarningView
 
 
@@ -76,6 +77,15 @@ class MainWindow(QtWidgets.QMainWindow):
             )
 
         self._thermostat.connection_error.connect(handle_connection_error)
+
+        # Graphs
+        self._channel_graphs = LiveDataPlotter(
+            self._thermostat,
+            [
+                [getattr(self, f"ch{ch}_t_graph"), getattr(self, f"ch{ch}_i_graph")]
+                for ch in range(self.NUM_CHANNELS)
+            ],
+        )
 
         # Bottom bar menus
         self.connection_details_menu = ConnectionDetailsMenu(
