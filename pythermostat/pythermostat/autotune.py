@@ -13,12 +13,12 @@ from pythermostat.client import Client
 
 
 class PIDAutotuneState(Enum):
-    STATE_OFF = auto()
-    STATE_RELAY_STEP_UP = auto()
-    STATE_RELAY_STEP_DOWN = auto()
-    STATE_SUCCEEDED = auto()
-    STATE_FAILED = auto()
-    STATE_READY = auto()
+    OFF = auto()
+    RELAY_STEP_UP = auto()
+    RELAY_STEP_DOWN = auto()
+    SUCCEEDED = auto()
+    FAILED = auto()
+    READY = auto()
 
 
 class PIDAutotune:
@@ -46,7 +46,7 @@ class PIDAutotune:
         self._noiseband = noiseband
         self._out_min = -out_step
         self._out_max = out_step
-        self._state = PIDAutotuneState.STATE_OFF
+        self._state = PIDAutotuneState.OFF
         self._peak_timestamps = deque(maxlen=5)
         self._peaks = deque(maxlen=5)
         self._output = 0
@@ -67,11 +67,11 @@ class PIDAutotune:
         self._inputs = deque(maxlen=round(lookback / sampletime))
 
     def set_ready(self):
-        self._state = PIDAutotuneState.STATE_READY
+        self._state = PIDAutotuneState.READY
         self._peak_count = 0
 
     def set_off(self):
-        self._state = PIDAutotuneState.STATE_OFF
+        self._state = PIDAutotuneState.OFF
 
     def state(self):
         """Get the current state."""
@@ -111,29 +111,29 @@ class PIDAutotune:
         now = time_input * 1000
 
         if self._state not in {
-            PIDAutotuneState.STATE_RELAY_STEP_DOWN,
-            PIDAutotuneState.STATE_RELAY_STEP_UP,
+            PIDAutotuneState.RELAY_STEP_DOWN,
+            PIDAutotuneState.RELAY_STEP_UP,
         }:
-            self._state = PIDAutotuneState.STATE_RELAY_STEP_UP
+            self._state = PIDAutotuneState.RELAY_STEP_UP
 
         self._last_run_timestamp = now
 
         # check input and change relay state if necessary
-        if self._state == PIDAutotuneState.STATE_RELAY_STEP_UP
+        if self._state == PIDAutotuneState.RELAY_STEP_UP
                 and input_val > self._setpoint + self._noiseband:
-            self._state = PIDAutotuneState.STATE_RELAY_STEP_DOWN
+            self._state = PIDAutotuneState.RELAY_STEP_DOWN
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
-        elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN
+        elif self._state == PIDAutotuneState.RELAY_STEP_DOWN
                 and input_val < self._setpoint - self._noiseband:
-            self._state = PIDAutotuneState.STATE_RELAY_STEP_UP
+            self._state = PIDAutotuneState.RELAY_STEP_UP
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
 
         # set output
-        if self._state == PIDAutotuneState.STATE_RELAY_STEP_UP:
+        if self._state == PIDAutotuneState.RELAY_STEP_UP:
             self._output = self._initial_output - self._outputstep
-        elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN:
+        elif self._state == PIDAutotuneState.RELAY_STEP_DOWN:
             self._output = self._initial_output + self._outputstep
 
         # respect output limits
@@ -201,16 +201,16 @@ class PIDAutotune:
             logging.debug('amplitude deviation: {0}'.format(amplitude_dev))
 
             if amplitude_dev < PIDAutotune.PEAK_AMPLITUDE_TOLERANCE:
-                self._state = PIDAutotuneState.STATE_SUCCEEDED
+                self._state = PIDAutotuneState.SUCCEEDED
 
         # if the autotune has not already converged
         # terminate after 10 cycles
         if self._peak_count >= 20:
             self._output = 0
-            self._state = PIDAutotuneState.STATE_FAILED
+            self._state = PIDAutotuneState.FAILED
             return True
 
-        if self._state == PIDAutotuneState.STATE_SUCCEEDED:
+        if self._state == PIDAutotuneState.SUCCEEDED:
             self._output = 0
             logging.debug('peak finding successful')
 
