@@ -12,6 +12,10 @@ class Client:
         self._lines = [""]
         self._check_zero_limits()
 
+    def disconnect(self):
+        self._socket.shutdown(socket.SHUT_RDWR)
+        self._socket.close()
+
     def _check_zero_limits(self):
         output_report = self.get_output()
         for output_channel in output_report:
@@ -110,6 +114,39 @@ class Client:
         """
         return self._get_conf("postfilter")
 
+    def get_report(self):
+        """Obtain one-time report on measurement values
+
+        Example of yielded data::
+            {'channel': 0,
+             'time': 2302524,
+             'interval': 0.12
+             'adc': 0.6199188965423515,
+             'sens': 6138.519310282602,
+             'temperature': 36.87032392655527,
+             'pid_engaged': True,
+             'i_set': 2.0635816680889123,
+             'dac_value': 2.527790834044456,
+             'dac_feedback': 2.523,
+             'i_tec': 2.331,
+             'tec_i': 2.0925,
+             'tec_u_meas': 2.5340000000000003,
+             'pid_output': 2.067581958092247}
+        """
+        return self._get_conf("report")
+
+    def get_ipv4(self):
+        """Get the IPv4 settings of the Thermostat"""
+        return self._command("ipv4")
+
+    def get_fan(self):
+        """Get Thermostat current fan settings"""
+        return self._command("fan")
+
+    def get_hwrev(self):
+        """Get Thermostat hardware revision"""
+        return self._command("hwrev")
+
     def report_mode(self):
         """Start reporting measurement values
 
@@ -163,10 +200,38 @@ class Client:
         self.set_param("pid", channel, "target", value=target)
         self.set_param("output", channel, "pid")
 
-    def save_config(self):
+    def save_config(self, channel=""):
         """Save current configuration to EEPROM"""
-        self._command("save")
+        self._command("save", channel)
+        if channel != "":
+            self._read_line()  # read the extra {}
 
-    def load_config(self):
+    def load_config(self, channel=""):
         """Load current configuration from EEPROM"""
-        self._command("load")
+        self._command("load", channel)
+        if channel != "":
+            self._read_line()  # read the extra {}
+
+    def reset(self):
+        """Reset the device"""
+        self._socket.sendall("reset".encode("utf-8"))
+        self.disconnect()  # resetting ends the TCP session, disconnect anyway
+
+    def enter_dfu_mode(self):
+        """Reset device and enters USB device firmware update (DFU) mode"""
+        self._socket.sendall("dfu".encode("utf-8"))
+        self.disconnect()  # resetting ends the TCP session, disconnect anyway
+
+    def set_ipv4(self, address, netmask, gateway=""):
+        """Configure IPv4 address, netmask length, and optional default gateway"""
+        self._command("ipv4", f"{address}/{netmask}", gateway)
+
+    def set_fan(self, power=None):
+        """Set fan power with values from 1 to 100. If omitted, set according to fcurve"""
+        if power is None:
+            power = "auto"
+        self._command("fan", power)
+
+    def set_fcurve(self, a=1.0, b=0.0, c=0.0):
+        """Set fan controller curve coefficients"""
+        self._command("fcurve", a, b, c)
