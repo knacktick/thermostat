@@ -1,0 +1,336 @@
+{
+   "ctrl_panel": [
+      {
+         "name": "Temperature",
+         "type": "float",
+         "format": "{value:.4f} °C",
+         "readonly": true
+      },
+      {
+         "name": "Current through TEC",
+         "type": "float",
+         "suffix": "mA",
+         "decimals": 6,
+         "readonly": true
+      },
+      {
+         "name": "Output Config",
+         "expanded": true,
+         "type": "group",
+         "children": [
+            {
+               "name": "Control Method",
+               "type": "mutex",
+               "limits": [
+                  "Constant Current",
+                  "Temperature PID"
+               ],
+               "value": "Constant Current",
+               "thermostat:set_param": {
+                  "topic": "output",
+                  "field": "pid"
+               },
+               "children": [
+                  {
+                     "name": "Set Current",
+                     "type": "float",
+                     "value": 0,
+                     "step": 100,
+                     "limits": [
+                        -2000,
+                        2000
+                     ],
+                     "triggerOnShow": true,
+                     "decimals": 6,
+                     "suffix": "mA",
+                     "thermostat:set_param": {
+                        "topic": "output",
+                        "field": "i_set"
+                     },
+                     "lock": false
+                  },
+                  {
+                     "name": "Set Temperature",
+                     "type": "float",
+                     "value": 25,
+                     "step": 0.1,
+                     "limits": [
+                        -273,
+                        300
+                     ],
+                     "format": "{value:.4f} °C",
+                     "thermostat:set_param": {
+                        "topic": "pid",
+                        "field": "target"
+                     },
+                     "lock": false
+                  }
+               ]
+            },
+            {
+               "name": "Limits",
+               "expanded": true,
+               "type": "group",
+               "children": [
+                  {
+                     "name": "Max Cooling Current",
+                     "type": "float",
+                     "value": 0,
+                     "step": 100,
+                     "decimals": 6,
+                     "limits": [
+                        0,
+                        2000
+                     ],
+                     "suffix": "mA",
+                     "thermostat:set_param": {
+                        "topic": "output",
+                        "field": "max_i_pos"
+                     },
+                     "lock": false
+                  },
+                  {
+                     "name": "Max Heating Current",
+                     "type": "float",
+                     "value": 0,
+                     "step": 100,
+                     "decimals": 6,
+                     "limits": [
+                        0,
+                        2000
+                     ],
+                     "suffix": "mA",
+                     "thermostat:set_param": {
+                        "topic": "output",
+                        "field": "max_i_neg"
+                     },
+                     "lock": false
+                  },
+                  {
+                     "name": "Max Voltage Difference",
+                     "type": "float",
+                     "value": 0,
+                     "step": 0.1,
+                     "limits": [
+                        0,
+                        5
+                     ],
+                     "siPrefix": true,
+                     "suffix": "V",
+                     "thermostat:set_param": {
+                        "topic": "output",
+                        "field": "max_v"
+                     },
+                     "lock": false
+                  }
+               ]
+            }
+         ]
+      },
+      {
+         "name": "Thermistor Config",
+         "expanded": true,
+         "type": "group",
+         "children": [
+            {
+               "name": "T₀",
+               "type": "float",
+               "value": 25,
+               "step": 0.1,
+               "limits": [
+                  -100,
+                  100
+               ],
+               "format": "{value:.4f} °C",
+               "thermostat:set_param": {
+                  "topic": "s-h",
+                  "field": "t0"
+               },
+               "lock": false
+            },
+            {
+               "name": "R₀",
+               "type": "float",
+               "value": 10000,
+               "step": 1,
+               "siPrefix": true,
+               "suffix": "Ω",
+               "thermostat:set_param": {
+                  "topic": "s-h",
+                  "field": "r0"
+               },
+               "lock": false
+            },
+            {
+               "name": "B",
+               "type": "float",
+               "value": 3950,
+               "step": 1,
+               "suffix": "K",
+               "decimals": 4,
+               "thermostat:set_param": {
+                  "topic": "s-h",
+                  "field": "b"
+               },
+               "lock": false
+            },
+            {
+               "name": "Postfilter Rate",
+               "type": "list",
+               "value": 16.67,
+               "thermostat:set_param": {
+                  "topic": "postfilter",
+                  "field": "rate"
+               },
+               "limits": {
+                  "Off": null,
+                  "16.67 Hz": 16.67,
+                  "20 Hz": 20.0,
+                  "21.25 Hz": 21.25,
+                  "27 Hz": 27.0
+               },
+               "lock": false
+            }
+         ]
+      },
+      {
+         "name": "PID Config",
+         "expanded": true,
+         "type": "group",
+         "children": [
+            {
+               "name": "Kp",
+               "type": "float",
+               "step": 0.1,
+               "suffix": "",
+               "thermostat:set_param": {
+                  "topic": "pid",
+                  "field": "kp"
+               },
+               "lock": false
+            },
+            {
+               "name": "Ki",
+               "type": "float",
+               "step": 0.1,
+               "suffix": "Hz",
+               "thermostat:set_param": {
+                  "topic": "pid",
+                  "field": "ki"
+               },
+               "lock": false
+            },
+            {
+               "name": "Kd",
+               "type": "float",
+               "step": 0.1,
+               "suffix": "s",
+               "thermostat:set_param": {
+                  "topic": "pid",
+                  "field": "kd"
+               },
+               "lock": false
+            },
+            {
+               "name": "PID Output Clamping",
+               "expanded": true,
+               "type": "group",
+               "children": [
+                  {
+                     "name": "Minimum",
+                     "type": "float",
+                     "step": 100,
+                     "limits": [
+                        -2000,
+                        2000
+                     ],
+                     "decimals": 6,
+                     "suffix": "mA",
+                     "thermostat:set_param": {
+                        "topic": "pid",
+                        "field": "output_min"
+                     },
+                     "lock": false
+                  },
+                  {
+                     "name": "Maximum",
+                     "type": "float",
+                     "step": 100,
+                     "limits": [
+                        -2000,
+                        2000
+                     ],
+                     "decimals": 6,
+                     "suffix": "mA",
+                     "thermostat:set_param": {
+                        "topic": "pid",
+                        "field": "output_max"
+                     },
+                     "lock": false
+                  }
+               ]
+            },
+            {
+               "name": "PID Auto Tune",
+               "expanded": false,
+               "type": "group",
+               "children": [
+                  {
+                     "name": "Target Temperature",
+                     "type": "float",
+                     "value": 20,
+                     "step": 0.1,
+                     "format": "{value:.4f} °C",
+                     "pid_autotune": "target_temp"
+                  },
+                  {
+                     "name": "Test Current",
+                     "type": "float",
+                     "value": 0,
+                     "decimals": 6,
+                     "step": 100,
+                     "limits": [
+                        -2000,
+                        2000
+                     ],
+                     "suffix": "mA",
+                     "pid_autotune": "test_current"
+                  },
+                  {
+                     "name": "Temperature Swing",
+                     "type": "float",
+                     "value": 1.5,
+                     "step": 0.1,
+                     "prefix": "±",
+                     "format": "{value:.4f} °C",
+                     "pid_autotune": "temp_swing"
+                  },
+                  {
+                     "name": "Lookback",
+                     "type": "float",
+                     "value": 3.0,
+                     "step": 0.1,
+                     "format": "{value:.4f} s",
+                     "pid_autotune": "lookback"
+                  },
+                  {
+                     "name": "Run",
+                     "type": "action",
+                     "tip": "Run"
+                  }
+               ]
+            }
+         ]
+      },
+      {
+         "name": "Save to flash",
+         "type": "action",
+         "tip": "Save config to thermostat, applies on reset"
+      },
+      {
+         "name": "Load from flash",
+         "type": "action",
+         "tip": "Load config from flash"
+      }
+   ]
+}

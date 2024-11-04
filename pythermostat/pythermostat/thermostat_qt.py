@@ -4,6 +4,7 @@ import asyncio
 import logging
 import argparse
 import importlib.resources
+import json
 from PyQt6 import QtWidgets, QtGui, uic
 from PyQt6.QtCore import pyqtSlot
 import qasync
@@ -11,6 +12,7 @@ from qasync import asyncSlot, asyncClose
 from pythermostat.autotune import PIDAutotuneState
 from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionState
 from pythermostat.gui.model.pid_autotuner import PIDAutoTuner
+from pythermostat.gui.view.ctrl_panel import CtrlPanel
 from pythermostat.gui.view.info_box import InfoBox
 from pythermostat.gui.view.menus import PlotOptionsMenu, ThermostatSettingsMenu, ConnectionDetailsMenu
 from pythermostat.gui.view.live_plot_view import LiveDataPlotter
@@ -35,6 +37,12 @@ def get_argparser():
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="Set the logging level",
     )
+    parser.add_argument(
+        "-p",
+        "--param_tree",
+        default=importlib.resources.files("pythermostat.gui.view").joinpath("param_tree.json"),
+        help="Param Tree Description JSON File",
+    )
 
     return parser
 
@@ -42,7 +50,7 @@ def get_argparser():
 class MainWindow(QtWidgets.QMainWindow):
     NUM_CHANNELS = 2
 
-    def __init__(self):
+    def __init__(self, args):
         super().__init__()
 
         ui_file_path = importlib.resources.files("pythermostat.gui.view").joinpath("MainWindow.ui")
@@ -77,6 +85,19 @@ class MainWindow(QtWidgets.QMainWindow):
             )
 
         self._thermostat.connection_error.connect(handle_connection_error)
+
+        # Control Panel
+        def get_ctrl_panel_config(args):
+            with open(args.param_tree, "r", encoding="utf-8") as f:
+                return json.load(f)["ctrl_panel"]
+
+        self._ctrl_panel_view = CtrlPanel(
+            self._thermostat,
+            self._autotuners,
+            self._info_box,
+            [self.ch0_tree, self.ch1_tree],
+            get_ctrl_panel_config(args),
+        )
 
         # Graphs
         self._channel_graphs = LiveDataPlotter(
@@ -205,7 +226,7 @@ async def coro_main():
     app = QtWidgets.QApplication.instance()
     app.aboutToQuit.connect(app_quit_event.set)
 
-    main_window = MainWindow()
+    main_window = MainWindow(args)
     main_window.show()
 
     if args.connect:
