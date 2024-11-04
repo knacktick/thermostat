@@ -11,8 +11,8 @@ from qasync import asyncSlot, asyncClose
 from pythermostat.autotune import PIDAutotuneState
 from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionState
 from pythermostat.gui.model.pid_autotuner import PIDAutoTuner
-from pythermostat.gui.view.connection_details_menu import ConnectionDetailsMenu
 from pythermostat.gui.view.info_box import InfoBox
+from pythermostat.gui.view.menus import PlotOptionsMenu, ThermostatSettingsMenu, ConnectionDetailsMenu
 from pythermostat.gui.view.live_plot_view import LiveDataPlotter
 from pythermostat.gui.view.zero_limits_warning_view import ZeroLimitsWarningView
 
@@ -92,6 +92,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._thermostat, self.connect_btn
         )
         self.connect_btn.setMenu(self.connection_details_menu)
+
+        self._thermostat_settings_menu = ThermostatSettingsMenu(
+            self._thermostat, self._info_box, self.style()
+        )
+        self.thermostat_settings.setMenu(self._thermostat_settings_menu)
+
+        self._plot_options_menu = PlotOptionsMenu(self._channel_graphs)
+        self.plot_settings.setMenu(self._plot_options_menu)
 
         # Status line
         self._zero_limits_warning_view = ZeroLimitsWarningView(
