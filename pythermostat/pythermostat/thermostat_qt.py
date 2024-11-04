@@ -8,7 +8,9 @@ from PyQt6 import QtWidgets, QtGui, uic
 from PyQt6.QtCore import pyqtSlot
 import qasync
 from qasync import asyncSlot, asyncClose
+from pythermostat.autotune import PIDAutotuneState
 from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionState
+from pythermostat.gui.model.pid_autotuner import PIDAutoTuner
 from pythermostat.gui.view.connection_details_menu import ConnectionDetailsMenu
 from pythermostat.gui.view.info_box import InfoBox
 from pythermostat.gui.view.zero_limits_warning_view import ZeroLimitsWarningView
@@ -53,6 +55,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self._thermostat.connection_state_update.connect(
             self._on_connection_state_changed
         )
+
+        self._autotuners = PIDAutoTuner(self, self._thermostat, 2)
+        self._autotuners.autotune_state_changed.connect(
+            self._on_pid_autotune_state_changed
+        )
+
+        # Handlers for disconnections
+        async def autotune_disconnect():
+            for ch in range(self.NUM_CHANNELS):
+                if self._autotuners.get_state(ch) != PIDAutotuneState.OFF:
+                    await self._autotuners.stop_pid_from_running(ch)
+
+        self._thermostat.disconnect_cb = autotune_disconnect
 
         @pyqtSlot()
         def handle_connection_error():
@@ -110,6 +125,28 @@ class MainWindow(QtWidgets.QMainWindow):
             case ThermostatConnectionState.DISCONNECTED:
                 self.connect_btn.setText("Connect")
                 self.status_lbl.setText("Disconnected")
+
+    @pyqtSlot(int, PIDAutotuneState)
+    def _on_pid_autotune_state_changed(self, _ch, _state):
+        autotuning_channels = []
+        for ch in range(self.NUM_CHANNELS):
+            if self._autotuners.get_state(ch) in {
+                PIDAutotuneState.READY,
+                PIDAutotuneState.RELAY_STEP_UP,
+                PIDAutotuneState.RELAY_STEP_DOWN,
+            }:
+                autotuning_channels.append(ch)
+
+        if len(autotuning_channels) == 0:
+            self.background_task_lbl.setText("Ready.")
+            self.loading_spinner.hide()
+            self.loading_spinner.stop()
+        else:
+            self.background_task_lbl.setText(
+                f"Autotuning channel {autotuning_channels}..."
+            )
+            self.loading_spinner.start()
+            self.loading_spinner.show()
 
     @asyncSlot()
     async def on_connect_btn_clicked(self):
