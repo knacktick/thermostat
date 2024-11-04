@@ -68,7 +68,26 @@
           with pkgs.python3Packages; [
             numpy
             matplotlib
+            pyqtgraph
+            pyqt6
+            qasync
+            pglive
           ];
+      };
+
+      pglive = pkgs.python3Packages.buildPythonPackage rec {
+        pname = "pglive";
+        version = "0.7.2";
+        format = "pyproject";
+        src = pkgs.fetchPypi {
+          inherit pname version;
+          hash = "sha256-jqj8X6H1N5mJQ4OrY5ANqRB0YJByqg/bNneEALWmH1A=";
+        };
+        buildInputs = [ pkgs.python3Packages.poetry-core ];
+        propagatedBuildInputs = with pkgs.python3Packages; [
+          pyqtgraph
+          numpy
+        ];
       };
     in
     {
@@ -95,6 +114,10 @@
           ++ (with python3Packages; [
             numpy
             matplotlib
+            pyqtgraph
+            pyqt6
+            qasync
+            pglive
           ]);
       };
 
