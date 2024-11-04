@@ -1,3 +1,4 @@
+import time
 from pytec.client import Client
 
 tec = Client() #(host="localhost", port=6667)
@@ -7,5 +8,6 @@ print(tec.get_pid())
 print(tec.get_output())
 print(tec.get_postfilter())
 print(tec.get_b_parameter())
-for data in tec.report_mode():
-    print(data)
+while True:
+    print(tec.get_report())
+    time.sleep(0.05)

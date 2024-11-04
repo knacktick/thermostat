@@ -1,7 +1,7 @@
 import socket
 import json
 import logging
-import time
+
 
 class CommandError(Exception):
     pass
@@ -146,36 +146,6 @@ class Client:
     def get_hwrev(self):
         """Get Thermostat hardware revision"""
         return self._command("hwrev")
-
-    def report_mode(self):
-        """Start reporting measurement values
-
-        Example of yielded data::
-            {'channel': 0,
-             'time': 2302524,
-             'adc': 0.6199188965423515,
-             'sens': 6138.519310282602,
-             'temperature': 36.87032392655527,
-             'pid_engaged': True,
-             'i_set': 2.0635816680889123,
-             'vref': 1.494,
-             'dac_value': 2.527790834044456,
-             'dac_feedback': 2.523,
-             'i_tec': 2.331,
-             'tec_i': 2.0925,
-             'tec_u_meas': 2.5340000000000003,
-             'pid_output': 2.067581958092247}
-        """
-        while True:
-            self._socket.sendall("report\n".encode('utf-8'))
-            line = self._read_line()
-            if not line:
-                break
-            try:
-                yield json.loads(line)
-            except json.decoder.JSONDecodeError:
-                pass
-            time.sleep(0.05)
 
     def set_param(self, topic, channel, field="", value=""):
         """Set configuration parameters
