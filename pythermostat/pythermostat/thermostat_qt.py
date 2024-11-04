@@ -11,6 +11,7 @@ from qasync import asyncSlot, asyncClose
 from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionState
 from pythermostat.gui.view.connection_details_menu import ConnectionDetailsMenu
 from pythermostat.gui.view.info_box import InfoBox
+from pythermostat.gui.view.zero_limits_warning_view import ZeroLimitsWarningView
 
 
 def get_argparser():
@@ -66,6 +67,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self._thermostat, self.connect_btn
         )
         self.connect_btn.setMenu(self.connection_details_menu)
+
+        # Status line
+        self._zero_limits_warning_view = ZeroLimitsWarningView(
+            self._thermostat, self.style(), self.limits_warning
+        )
+        self.loading_spinner.hide()
 
         self.report_apply_btn.clicked.connect(
             lambda: self._thermostat.set_update_s(self.report_refresh_spin.value())
