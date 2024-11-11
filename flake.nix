@@ -57,10 +57,22 @@
         dontFixup = true;
         auditable = false;
       };
+
+      pytec = pkgs.python3Packages.buildPythonPackage {
+        pname = "pytec";
+        version = "0.0.0";
+        src = "${self}/pytec";
+
+        propagatedBuildInputs =
+          with pkgs.python3Packages; [
+            numpy
+            matplotlib
+          ];
+      };
     in
     {
       packages.x86_64-linux = {
-        inherit thermostat;
+        inherit thermostat pytec;
         default = thermostat;
       };
 
