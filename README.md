@@ -189,31 +189,30 @@ Testing heat flow direction with a low set current is recommended before install
 
 ### Limits
 
-Each MAX1968 TEC driver has analog/PWM inputs for setting
+Each channel has maximum value settings, for setting
 output limits.
 
-Use the `output` command to see current settings and maximum values.
+Use the `output` command to see them.
 
 | Limit       | Unit    | Description                   |
 | ---         | :---:   | ---                           |
 | `max_v`     | Volts   | Maximum voltage               |
 | `max_i_pos` | Amperes | Maximum positive current      |
 | `max_i_neg` | Amperes | Maximum negative current      |
-| `i_set`     | Amperes | (Not a limit; Open-loop mode) |
 
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
 output 0 max_v 1.5
 ```
 
-Example: set the maximum negative current of channel 0 to -3 A.
+Example: set the maximum negative current of channel 0 to -2 A.
 ```
-output 0 max_i_neg 3
+output 0 max_i_neg 2
 ```
 
-Example: set the maximum positive current of channel 1 to 3 A.
+Example: set the maximum positive current of channel 1 to 2 A.
 ```
-output 0 max_i_pos 3
+output 1 max_i_pos 2
 ```
 
 ### Open-loop mode
