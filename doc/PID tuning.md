@@ -13,7 +13,7 @@ When tuning Thermostat PID parameters, it is helpful to view the temperature, PI
 To use the Python real-time plotting utility, run
 
 ```shell
-python pythermostat/plot.py
+python pythermostat/pythermostat/plot.py
 ```
 
 ![default view](./assets/default%20view.png)
@@ -49,7 +49,7 @@ A PID auto tuning utility is provided in the PyThermostat library. The auto tuni
 To run the auto tuning utility, run
 
 ```shell
-python pythermostat/autotune.py
+python pythermostat/pythermostat/autotune.py
 ```
 
 After some time, the auto tuning utility will output the auto tuning results, below is a sample output
