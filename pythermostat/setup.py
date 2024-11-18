@@ -9,4 +9,13 @@ setup(
     license="GPLv3",
     install_requires=["setuptools"],
     packages=find_packages(),
+    entry_points={
+        "gui_scripts": [
+            "thermostat_plot = pythermostat.plot:main",
+        ],
+        "console_scripts": [
+            "thermostat_autotune = pythermostat.autotune:main",
+            "thermostat_test = pythermostat.test:main",
+        ]
+    },
 )
