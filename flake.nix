@@ -58,10 +58,10 @@
         auditable = false;
       };
 
-      pytec = pkgs.python3Packages.buildPythonPackage {
-        pname = "pytec";
+      pythermostat = pkgs.python3Packages.buildPythonPackage {
+        pname = "pythermostat";
         version = "0.0.0";
-        src = "${self}/pytec";
+        src = "${self}/pythermostat";
 
         propagatedBuildInputs =
           with pkgs.python3Packages; [
@@ -72,7 +72,7 @@
     in
     {
       packages.x86_64-linux = {
-        inherit thermostat pytec;
+        inherit thermostat pythermostat;
         default = thermostat;
       };
 

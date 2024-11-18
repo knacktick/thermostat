@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="pytec",
+    name="pythermostat",
     version="0.0",
     author="M-Labs",
     url="https://git.m-labs.hk/M-Labs/thermostat",

@@ -13,7 +13,7 @@ When tuning Thermostat PID parameters, it is helpful to view the temperature, PI
 To use the Python real-time plotting utility, run
 
 ```shell
-python pytec/plot.py
+python pythermostat/plot.py
 ```
 
 ![default view](./assets/default%20view.png)
@@ -44,12 +44,12 @@ Below are some general guidelines for manually tuning PID loops. Note that every
 
 ## Auto Tuning
 
-A PID auto tuning utility is provided in the Pytec library. The auto tuning utility drives the the load to a controlled oscillation, observes the ultimate gain and oscillation period and calculates a set of PID parameters.
+A PID auto tuning utility is provided in the PyThermostat library. The auto tuning utility drives the the load to a controlled oscillation, observes the ultimate gain and oscillation period and calculates a set of PID parameters.
 
 To run the auto tuning utility, run
 
 ```shell
-python pytec/autotune.py
+python pythermostat/autotune.py
 ```
 
 After some time, the auto tuning utility will output the auto tuning results, below is a sample output
