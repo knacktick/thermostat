@@ -1,5 +1,6 @@
 import math
 import logging
+import time
 from collections import deque, namedtuple
 from enum import Enum
 
@@ -236,13 +237,14 @@ def main():
 
     tec = Client()
 
-    data = next(tec.report_mode())
+    data = tec.get_report()
     ch = data[channel]
 
     tuner = PIDAutotune(target_temperature, output_step,
                         lookback, noiseband, ch['interval'])
 
-    for data in tec.report_mode():
+    while True:
+        data = tec.get_report()
 
         ch = data[channel]
 
@@ -254,6 +256,8 @@ def main():
         tuner_out = tuner.output()
 
         tec.set_param("output", channel, "i_set", tuner_out)
+
+        time.sleep(0.05)
 
     tec.set_param("output", channel, "i_set", 0)
 
