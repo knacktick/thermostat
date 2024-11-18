@@ -239,6 +239,22 @@ of channel 0 to the PID algorithm:
 output 0 pid
 ```
 
+### PID output clamping
+
+It is possible to clamp the PID algorithm output independently of channel output limits. This is desirable when e.g. there is a need to keep the current value above a certain threshold in closed-loop mode.
+
+Note that the actual output will still ultimately be limited by the `max_i_pos` and `max_i_neg` values.
+
+Set PID maximum output of channel 0 to 1.5 A.
+```
+pid 0 output_max 1.5
+```
+
+Set PID minimum output of channel 0 to 0.1 A.
+```
+pid 0 output_min 0.1
+```
+
 ## LED indicators
 
 | Name | Color | Meaning                        |
