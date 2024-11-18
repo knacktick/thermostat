@@ -1,6 +1,6 @@
 import argparse
 from contextlib import contextmanager
-from pytec.client import Client
+from pythermostat.client import Client
 
 
 CHANNELS = 2

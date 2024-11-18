@@ -3,7 +3,7 @@ import logging
 from collections import deque, namedtuple
 from enum import Enum
 
-from pytec.client import Client
+from pythermostat.client import Client
 
 # Based on hirshmann pid-autotune libiary
 # See https://github.com/hirschmann/pid-autotune

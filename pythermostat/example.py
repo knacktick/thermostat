@@ -1,5 +1,5 @@
 import time
-from pytec.client import Client
+from pythermostat.client import Client
 
 tec = Client() #(host="localhost", port=6667)
 tec.set_param("b-p", 1, "t0", 20)

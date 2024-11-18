@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from threading import Thread, Lock
-from pytec.client import Client
+from pythermostat.client import Client
 
 TIME_WINDOW = 300.0
 
