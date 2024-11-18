@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -47,7 +48,8 @@ quit = False
 
 def recv_data(tec):
     global last_packet_time
-    for data in tec.report_mode():
+    while True:
+        data = tec.get_report()
         ch0 = data[0]
         series_lock.acquire()
         try:
@@ -61,6 +63,7 @@ def recv_data(tec):
 
         if quit:
             break
+        time.sleep(0.05)
 
 thread = Thread(target=recv_data, args=(tec,))
 thread.start()
