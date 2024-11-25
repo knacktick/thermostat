@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pythermostat"
+version = "0.0"
+authors = [{name = "M-Labs"}]
+description = "Control TEC"
+urls.Repository = "https://git.m-labs.hk/M-Labs/thermostat"
+license = {text = "GPLv3"}
+
+[project.gui-scripts]
+thermostat_plot = "pythermostat.plot:main"
+
+[project.scripts]
+thermostat_autotune = "pythermostat.autotune:main"
+thermostat_test = "pythermostat.test:main"
+
+[tool.setuptools]
+packages.find = {}

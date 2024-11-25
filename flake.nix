@@ -61,6 +61,7 @@
       pythermostat = pkgs.python3Packages.buildPythonPackage {
         pname = "pythermostat";
         version = "0.0.0";
+        format = "pyproject";
         src = "${self}/pythermostat";
 
         propagatedBuildInputs =
