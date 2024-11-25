@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pythermostat"
 version = "0.0"
 authors = [{name = "M-Labs"}]
-description = "Control TEC"
+description = "Python utilities for the Sinara 8451 Thermostat"
 urls.Repository = "https://git.m-labs.hk/M-Labs/thermostat"
 license = {text = "GPLv3"}
 
@@ -16,6 +16,3 @@ thermostat_plot = "pythermostat.plot:main"
 [project.scripts]
 thermostat_autotune = "pythermostat.autotune:main"
 thermostat_test = "pythermostat.test:main"
-
-[tool.setuptools]
-packages.find = {}
