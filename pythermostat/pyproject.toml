@@ -9,6 +9,10 @@ authors = [{name = "M-Labs"}]
 description = "Python utilities for the Sinara 8451 Thermostat"
 urls.Repository = "https://git.m-labs.hk/M-Labs/thermostat"
 license = {text = "GPLv3"}
+dependencies = [
+    "numpy >= 1.26.4",
+    "matplotlib >= 3.9.2"
+]
 
 [project.gui-scripts]
 thermostat_plot = "pythermostat.plot:main"
