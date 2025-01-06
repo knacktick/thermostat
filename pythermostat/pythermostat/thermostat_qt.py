@@ -225,6 +225,11 @@ async def coro_main():
 
     app = QtWidgets.QApplication.instance()
     app.aboutToQuit.connect(app_quit_event.set)
+    app.setWindowIcon(
+        QtGui.QIcon(
+            str(importlib.resources.files("pythermostat.gui.resources").joinpath("artiq.svg"))
+        )
+    )
 
     main_window = MainWindow(args)
     main_window.show()
