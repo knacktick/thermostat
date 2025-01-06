@@ -9,8 +9,8 @@ from pythermostat.client import Client
 def main():
     TIME_WINDOW = 300.0
 
-    tec = Client()
-    target_temperature = tec.get_pid()[0]['target']
+    thermostat = Client()
+    target_temperature = thermostat.get_pid()[0]['target']
     print("Channel 0 target temperature: {:.3f}".format(target_temperature))
 
     class Series:
@@ -48,10 +48,10 @@ def main():
 
     quit = False
 
-    def recv_data(tec):
+    def recv_data(thermostat):
         global last_packet_time
         while True:
-            data = tec.get_report()
+            data = thermostat.get_report()
             ch0 = data[0]
             series_lock.acquire()
             try:
@@ -67,7 +67,7 @@ def main():
                 break
             time.sleep(0.05)
 
-    thread = Thread(target=recv_data, args=(tec,))
+    thread = Thread(target=recv_data, args=(thermostat,))
     thread.start()
 
     fig, ax = plt.subplots()

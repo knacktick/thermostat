@@ -235,16 +235,16 @@ def main():
 
     # logging.basicConfig(level=logging.DEBUG)
 
-    tec = Client()
+    thermostat = Client()
 
-    data = tec.get_report()
+    data = thermostat.get_report()
     ch = data[channel]
 
     tuner = PIDAutotune(target_temperature, output_step,
                         lookback, noiseband, ch['interval'])
 
     while True:
-        data = tec.get_report()
+        data = thermostat.get_report()
 
         ch = data[channel]
 
@@ -255,11 +255,11 @@ def main():
 
         tuner_out = tuner.output()
 
-        tec.set_param("output", channel, "i_set", tuner_out)
+        thermostat.set_param("output", channel, "i_set", tuner_out)
 
         time.sleep(0.05)
 
-    tec.set_param("output", channel, "i_set", 0)
+    thermostat.set_param("output", channel, "i_set", 0)
 
 
 if __name__ == "__main__":

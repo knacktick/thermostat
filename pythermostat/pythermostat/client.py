@@ -151,11 +151,11 @@ class Client:
         """Set configuration parameters
 
         Examples::
-            tec.set_param("output", 0, "max_v", 2.0)
-            tec.set_param("pid", 1, "output_max", 2.5)
-            tec.set_param("b-p", 0, "t0", 20.0)
-            tec.set_param("center", 0, "vref")
-            tec.set_param("postfilter", 1, 21)
+            thermostat.set_param("output", 0, "max_v", 2.0)
+            thermostat.set_param("pid", 1, "output_max", 2.5)
+            thermostat.set_param("b-p", 0, "t0", 20.0)
+            thermostat.set_param("center", 0, "vref")
+            thermostat.set_param("postfilter", 1, 21)
 
         See the firmware's README.md for a full list.
         """
