@@ -2,7 +2,7 @@ import math
 import logging
 import time
 from collections import deque, namedtuple
-from enum import Enum
+from enum import Enum, auto
 
 from pythermostat.client import Client
 
@@ -13,11 +13,11 @@ from pythermostat.client import Client
 
 
 class PIDAutotuneState(Enum):
-    STATE_OFF = 'off'
-    STATE_RELAY_STEP_UP = 'relay step up'
-    STATE_RELAY_STEP_DOWN = 'relay step down'
-    STATE_SUCCEEDED = 'succeeded'
-    STATE_FAILED = 'failed'
+    STATE_OFF = auto()
+    STATE_RELAY_STEP_UP = auto()
+    STATE_RELAY_STEP_DOWN = auto()
+    STATE_SUCCEEDED = auto()
+    STATE_FAILED = auto()
 
 
 class PIDAutotune:
@@ -94,27 +94,28 @@ class PIDAutotune:
         """
         now = time_input * 1000
 
-        if (self._state == PIDAutotuneState.STATE_OFF
-                or self._state == PIDAutotuneState.STATE_SUCCEEDED
-                or self._state == PIDAutotuneState.STATE_FAILED):
+        if self._state not in {
+            PIDAutotuneState.STATE_RELAY_STEP_DOWN,
+            PIDAutotuneState.STATE_RELAY_STEP_UP,
+        }:
             self._state = PIDAutotuneState.STATE_RELAY_STEP_UP
 
         self._last_run_timestamp = now
 
         # check input and change relay state if necessary
-        if (self._state == PIDAutotuneState.STATE_RELAY_STEP_UP
-                and input_val > self._setpoint + self._noiseband):
+        if self._state == PIDAutotuneState.STATE_RELAY_STEP_UP
+                and input_val > self._setpoint + self._noiseband:
             self._state = PIDAutotuneState.STATE_RELAY_STEP_DOWN
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
-        elif (self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN
-                and input_val < self._setpoint - self._noiseband):
+        elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN
+                and input_val < self._setpoint - self._noiseband:
             self._state = PIDAutotuneState.STATE_RELAY_STEP_UP
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
 
         # set output
-        if (self._state == PIDAutotuneState.STATE_RELAY_STEP_UP):
+        if self._state == PIDAutotuneState.STATE_RELAY_STEP_UP:
             self._output = self._initial_output - self._outputstep
         elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN:
             self._output = self._initial_output + self._outputstep
