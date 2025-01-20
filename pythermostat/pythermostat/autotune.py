@@ -18,6 +18,7 @@ class PIDAutotuneState(Enum):
     STATE_RELAY_STEP_DOWN = auto()
     STATE_SUCCEEDED = auto()
     STATE_FAILED = auto()
+    STATE_READY = auto()
 
 
 class PIDAutotune:
@@ -56,6 +57,21 @@ class PIDAutotune:
         self._induced_amplitude = 0
         self._Ku = 0
         self._Pu = 0
+
+    def set_param(self, target, step, noiseband, sampletime, lookback):
+        self._setpoint = target
+        self._outputstep = step
+        self._out_max = step
+        self._out_min = -step
+        self._noiseband = noiseband
+        self._inputs = deque(maxlen=round(lookback / sampletime))
+
+    def set_ready(self):
+        self._state = PIDAutotuneState.STATE_READY
+        self._peak_count = 0
+
+    def set_off(self):
+        self._state = PIDAutotuneState.STATE_OFF
 
     def state(self):
         """Get the current state."""
