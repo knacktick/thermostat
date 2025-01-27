@@ -145,22 +145,35 @@ impl fmt::Display for RefSource {
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
+/// Simultaneous Rejection of 50 Hz +/- 1 Hz and 60 Hz +/- 1 Hz
 pub enum PostFilter {
-    /// 27 SPS, 47 dB rejection, 36.7 ms settling
+    /// Output Data Rate: 27.27 SPS,
+    /// Settling Time: 36.67 ms,
+    /// Rejection: 47 dB
     F27SPS = 0b010,
-    /// 21.25 SPS, 62 dB rejection, 40 ms settling
-    F21SPS = 0b011,
-    /// 20 SPS, 86 dB rejection, 50 ms settling
+
+    /// Output Data Rate: 25 SPS,
+    /// Settling Time: 40.0 ms,
+    /// Rejection: 62 dB
+    F25SPS = 0b011,
+
+    /// Output Data Rate: 20 SPS,
+    /// Settling Time: 50.0 ms,
+    /// Rejection: 85 dB
     F20SPS = 0b101,
-    /// 16.67 SPS, 92 dB rejection, 60 ms settling
+
+    /// Output Data Rate: 16.667 SPS,
+    /// Settling Time: 60.0 ms,
+    /// Rejection: 90 dB
     F16SPS = 0b110,
+
     Invalid = 0b111,
 }
 
 impl PostFilter {
     pub const VALID_VALUES: &'static [Self] = &[
         PostFilter::F27SPS,
-        PostFilter::F21SPS,
+        PostFilter::F25SPS,
         PostFilter::F20SPS,
         PostFilter::F16SPS,
     ];
@@ -182,10 +195,10 @@ impl PostFilter {
     /// Samples per Second
     pub fn output_rate(&self) -> Option<f32> {
         match self {
-            PostFilter::F27SPS => Some(27.0),
-            PostFilter::F21SPS => Some(21.25),
+            PostFilter::F27SPS => Some(27.27),
+            PostFilter::F25SPS => Some(25.0),
             PostFilter::F20SPS => Some(20.0),
-            PostFilter::F16SPS => Some(16.67),
+            PostFilter::F16SPS => Some(16.667),
             PostFilter::Invalid => None,
         }
     }
@@ -195,7 +208,7 @@ impl From<u8> for PostFilter {
     fn from(x: u8) -> Self {
         match x {
             0b010 => PostFilter::F27SPS,
-            0b011 => PostFilter::F21SPS,
+            0b011 => PostFilter::F25SPS,
             0b101 => PostFilter::F20SPS,
             0b110 => PostFilter::F16SPS,
             _ => PostFilter::Invalid,
