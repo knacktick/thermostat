@@ -28,9 +28,7 @@ impl ChannelConfig {
         let output_limits = OutputLimits::new(channels, channel);
 
         let adc_postfilter = channels
-            .adc
             .get_postfilter(channel as u8)
-            .unwrap()
             .unwrap_or(PostFilter::Invalid);
 
         let state = channels.channel_state(channel);
@@ -66,7 +64,7 @@ impl ChannelConfig {
             PostFilter::Invalid => None,
             adc_postfilter => Some(adc_postfilter),
         };
-        let _ = channels.adc.set_postfilter(channel as u8, adc_postfilter);
+        let _ = channels.set_postfilter(channel as u8, adc_postfilter);
         let _ = channels.set_i(channel, self.i_set);
         channels.set_polarity(channel, self.polarity.clone());
     }

@@ -261,7 +261,7 @@ impl Handler {
         channels: &mut Channels,
         channel: usize,
     ) -> Result<Handler, Error> {
-        channels.adc.set_postfilter(channel as u8, None).unwrap();
+        channels.set_postfilter(channel as u8, None);
         send_line(socket, b"{}");
         Ok(Handler::Handled)
     }
@@ -275,10 +275,7 @@ impl Handler {
         let filter = ad7172::PostFilter::closest(rate);
         match filter {
             Some(filter) => {
-                channels
-                    .adc
-                    .set_postfilter(channel as u8, Some(filter))
-                    .unwrap();
+                channels.set_postfilter(channel as u8, Some(filter));
                 send_line(socket, b"{}");
             }
             None => {

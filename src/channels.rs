@@ -1,6 +1,8 @@
 use crate::timer::sleep;
 use crate::{
-    ad5680, ad7172, b_parameter,
+    ad5680,
+    ad7172::{self, PostFilter},
+    b_parameter,
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
     command_handler::JsonBuffer,
@@ -58,7 +60,7 @@ const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
 pub struct Channels {
     channel0: Channel<Channel0>,
     channel1: Channel<Channel1>,
-    pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
+    adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
     /// stm32f4 integrated adc
     pins_adc: pins::PinsAdc,
     pub pwm: pins::PwmPins,
@@ -374,6 +376,10 @@ impl Channels {
         self.channel_state(channel).output_limits.max_i_neg
     }
 
+    pub fn get_postfilter(&mut self, index: u8) -> Option<PostFilter> {
+        self.adc.get_postfilter(index).unwrap()
+    }
+
     // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
         let tec_i = (self.adc_read(channel, PinsAdcReadTarget::ITec, 16)
@@ -453,6 +459,10 @@ impl Channels {
         };
         self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
         (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
+    }
+
+    pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) {
+        self.adc.set_postfilter(index, filter).unwrap()
     }
 
     pub fn set_polarity(&mut self, channel: usize, polarity: Polarity) {
@@ -542,9 +552,7 @@ impl Channels {
 
     fn postfilter_summary(&mut self, channel: usize) -> PostFilterSummary {
         let rate = self
-            .adc
             .get_postfilter(channel as u8)
-            .unwrap()
             .and_then(|filter| filter.output_rate());
         PostFilterSummary { channel, rate }
     }
