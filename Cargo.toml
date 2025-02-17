@@ -14,7 +14,7 @@ features = []
 default-target = "thumbv7em-none-eabihf"
 
 [dependencies]
-panic-halt = "0.2"
+panic-halt = "1.0"
 panic-semihosting = { version = "0.5", optional = true }
 log = "0.4"
 bare-metal = "1"
