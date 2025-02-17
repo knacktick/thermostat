@@ -99,13 +99,13 @@ impl Handler {
         Ok(Handler::Handled)
     }
 
-    fn show_pwm(socket: &mut TcpSocket, channels: &mut Channels) -> Result<Handler, Error> {
+    fn show_output(socket: &mut TcpSocket, channels: &mut Channels) -> Result<Handler, Error> {
         match channels.output_summaries_json() {
             Ok(buf) => {
                 send_line(socket, &buf);
             }
             Err(e) => {
-                error!("unable to serialize pwm summary: {:?}", e);
+                error!("unable to serialize output summary: {:?}", e);
                 let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
                 return Err(Error::Report);
             }
@@ -170,7 +170,7 @@ impl Handler {
         Ok(Handler::Handled)
     }
 
-    fn set_pwm(
+    fn set_output(
         socket: &mut TcpSocket,
         channels: &mut Channels,
         channel: usize,
@@ -476,7 +476,7 @@ impl Handler {
             Command::Quit => Ok(Handler::CloseSocket),
             Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),
             Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),
-            Command::Show(ShowCommand::Output) => Handler::show_pwm(socket, channels),
+            Command::Show(ShowCommand::Output) => Handler::show_output(socket, channels),
             Command::Show(ShowCommand::BParameter) => Handler::show_b_parameter(socket, channels),
             Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
@@ -488,7 +488,7 @@ impl Handler {
                 channel,
                 pin,
                 value,
-            } => Handler::set_pwm(socket, channels, channel, pin, value),
+            } => Handler::set_output(socket, channels, channel, pin, value),
             Command::CenterPoint { channel, center } => {
                 Handler::set_center_point(socket, channels, channel, center)
             }

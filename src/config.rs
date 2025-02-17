@@ -18,14 +18,14 @@ pub struct ChannelConfig {
     i_set: ElectricCurrent,
     polarity: Polarity,
     bp: b_parameter::Parameters,
-    pwm: PwmLimits,
+    output_limits: OutputLimits,
     /// uses variant `PostFilter::Invalid` instead of `None` to save space
     adc_postfilter: PostFilter,
 }
 
 impl ChannelConfig {
     pub fn new(channels: &mut Channels, channel: usize) -> Self {
-        let pwm = PwmLimits::new(channels, channel);
+        let output_limits = OutputLimits::new(channels, channel);
 
         let adc_postfilter = channels
             .adc
@@ -47,7 +47,7 @@ impl ChannelConfig {
             i_set,
             polarity: state.polarity.clone(),
             bp: state.bp.clone(),
-            pwm,
+            output_limits,
             adc_postfilter,
         }
     }
@@ -60,7 +60,7 @@ impl ChannelConfig {
         state.pid_engaged = self.pid_engaged;
         state.bp = self.bp.clone();
 
-        self.pwm.apply(channels, channel);
+        self.output_limits.apply(channels, channel);
 
         let adc_postfilter = match self.adc_postfilter {
             PostFilter::Invalid => None,
@@ -73,18 +73,18 @@ impl ChannelConfig {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PwmLimits {
+pub struct OutputLimits {
     pub max_v: ElectricPotential,
     pub max_i_pos: ElectricCurrent,
     pub max_i_neg: ElectricCurrent,
 }
 
-impl PwmLimits {
+impl OutputLimits {
     pub fn new(channels: &mut Channels, channel: usize) -> Self {
         let max_v = channels.get_max_v(channel);
         let max_i_pos = channels.get_max_i_pos(channel);
         let max_i_neg = channels.get_max_i_neg(channel);
-        PwmLimits {
+        OutputLimits {
             max_v,
             max_i_pos,
             max_i_neg,

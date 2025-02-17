@@ -1,7 +1,7 @@
 use crate::{
     ad7172, b_parameter as bp,
     command_parser::{CenterPoint, Polarity},
-    config::PwmLimits,
+    config::OutputLimits,
     pid,
 };
 use num_traits::Zero;
@@ -29,7 +29,7 @@ pub struct ChannelState {
     pub center: CenterPoint,
     pub dac_value: ElectricPotential,
     pub i_set: ElectricCurrent,
-    pub pwm_limits: PwmLimits,
+    pub output_limits: OutputLimits,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub bp: bp::Parameters,
@@ -47,7 +47,7 @@ impl ChannelState {
             center: CenterPoint::VRef,
             dac_value: ElectricPotential::new::<volt>(0.0),
             i_set: ElectricCurrent::new::<ampere>(0.0),
-            pwm_limits: PwmLimits {
+            output_limits: OutputLimits {
                 max_v: ElectricPotential::zero(),
                 max_i_pos: ElectricCurrent::zero(),
                 max_i_neg: ElectricCurrent::zero(),

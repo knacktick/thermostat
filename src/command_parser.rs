@@ -148,7 +148,7 @@ pub enum Command {
     Reset,
     Ipv4(Ipv4Config),
     Show(ShowCommand),
-    /// PWM parameter setting
+    /// Output parameter setting
     Output {
         channel: usize,
         pin: PwmPin,
