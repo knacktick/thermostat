@@ -440,16 +440,17 @@ impl Channels {
         max_i_pos: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+        let pin = match self.channel_state(channel).polarity {
+            Polarity::Normal => PwmPin::MaxIPos,
+            Polarity::Reversed => PwmPin::MaxINeg,
+        };
 
         let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
         self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
         let v_maxip = 10.0 * (max_i_pos * r_sense);
         let duty = (v_maxip / CPU_ADC_VREF).get::<ratio>();
 
-        let duty = match self.channel_state(channel).polarity {
-            Polarity::Normal => self.set_pwm(channel, PwmPin::MaxIPos, duty),
-            Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxINeg, duty),
-        };
+        let duty = self.set_pwm(channel, pin, duty);
         let v_maxip = duty * CPU_ADC_VREF;
         let max_i_pos = v_maxip / 10.0 / r_sense;
 
@@ -462,16 +463,17 @@ impl Channels {
         max_i_neg: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+        let pin = match self.channel_state(channel).polarity {
+            Polarity::Normal => PwmPin::MaxINeg,
+            Polarity::Reversed => PwmPin::MaxIPos,
+        };
 
         let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
         self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
         let v_maxin = 10.0 * (max_i_neg * r_sense);
         let duty = (v_maxin / CPU_ADC_VREF).get::<ratio>();
 
-        let duty = match self.channel_state(channel).polarity {
-            Polarity::Normal => self.set_pwm(channel, PwmPin::MaxINeg, duty),
-            Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxIPos, duty),
-        };
+        let duty = self.set_pwm(channel, pin, duty);
         let v_maxin = duty * CPU_ADC_VREF;
         let max_i_neg = v_maxin / 10.0 / r_sense;
 
