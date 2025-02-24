@@ -51,11 +51,6 @@ pub const MAX_TEC_V: ElectricPotential = ElectricPotential {
     units: PhantomData,
     value: 4.0,
 };
-const MAX_TEC_I_DUTY_TO_CURRENT_RATE: ElectricCurrent = ElectricCurrent {
-    dimension: PhantomData,
-    units: PhantomData,
-    value: 1.0 / (10.0 * R_SENSE / 3.3),
-};
 // DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
 const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
     dimension: PhantomData,
@@ -444,14 +439,21 @@ impl Channels {
         channel: usize,
         max_i_pos: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
+        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+
         let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
-        let duty = (max_i_pos / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
+        self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
+        let v_maxip = 10.0 * (max_i_pos * r_sense);
+        let duty = (v_maxip / CPU_ADC_VREF).get::<ratio>();
+
         let duty = match self.channel_state(channel).polarity {
             Polarity::Normal => self.set_pwm(channel, PwmPin::MaxIPos, duty),
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxINeg, duty),
         };
-        self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
+        let v_maxip = duty * CPU_ADC_VREF;
+        let max_i_pos = v_maxip / 10.0 / r_sense;
+
+        (max_i_pos, MAX_TEC_I)
     }
 
     pub fn set_max_i_neg(
@@ -459,14 +461,21 @@ impl Channels {
         channel: usize,
         max_i_neg: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
+        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+
         let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
-        let duty = (max_i_neg / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
+        self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
+        let v_maxin = 10.0 * (max_i_neg * r_sense);
+        let duty = (v_maxin / CPU_ADC_VREF).get::<ratio>();
+
         let duty = match self.channel_state(channel).polarity {
             Polarity::Normal => self.set_pwm(channel, PwmPin::MaxINeg, duty),
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxIPos, duty),
         };
-        self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
+        let v_maxin = duty * CPU_ADC_VREF;
+        let max_i_neg = v_maxin / 10.0 / r_sense;
+
+        (max_i_neg, MAX_TEC_I)
     }
 
     pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) {
