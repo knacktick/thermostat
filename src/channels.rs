@@ -426,7 +426,7 @@ impl Channels {
         let duty = (max_v / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
         self.channel_state(channel).output_limits.max_v = max_v;
-        (duty * max, max)
+        (duty * max, MAX_TEC_V)
     }
 
     pub fn set_max_i_pos(
@@ -434,7 +434,6 @@ impl Channels {
         channel: usize,
         max_i_pos: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
-        let max = ElectricCurrent::new::<ampere>(3.0);
         let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
         let duty = (max_i_pos / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
         let duty = match self.channel_state(channel).polarity {
@@ -442,7 +441,7 @@ impl Channels {
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxINeg, duty),
         };
         self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     pub fn set_max_i_neg(
@@ -450,7 +449,6 @@ impl Channels {
         channel: usize,
         max_i_neg: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
-        let max = ElectricCurrent::new::<ampere>(3.0);
         let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
         let duty = (max_i_neg / MAX_TEC_I_DUTY_TO_CURRENT_RATE).get::<ratio>();
         let duty = match self.channel_state(channel).polarity {
@@ -458,7 +456,7 @@ impl Channels {
             Polarity::Reversed => self.set_pwm(channel, PwmPin::MaxIPos, duty),
         };
         self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
-        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, max)
+        (duty * MAX_TEC_I_DUTY_TO_CURRENT_RATE, MAX_TEC_I)
     }
 
     pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) {
