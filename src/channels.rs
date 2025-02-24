@@ -34,6 +34,12 @@ pub enum PinsAdcReadTarget {
 pub const CHANNELS: usize = 2;
 const R_SENSE: f64 = 0.05;
 
+const CPU_ADC_VREF: ElectricPotential = ElectricPotential {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 3.3,
+};
+
 // From design specs
 pub const MAX_TEC_I: ElectricCurrent = ElectricCurrent {
     dimension: PhantomData,
@@ -421,12 +427,16 @@ impl Channels {
         channel: usize,
         max_v: ElectricPotential,
     ) -> (ElectricPotential, ElectricPotential) {
-        let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let max_v = max_v.min(MAX_TEC_V).max(ElectricPotential::zero());
-        let duty = (max_v / max).get::<ratio>();
-        let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
         self.channel_state(channel).output_limits.max_v = max_v;
-        (duty * max, MAX_TEC_V)
+        let v_maxv = max_v / 4.0;
+        let duty = (v_maxv / CPU_ADC_VREF).get::<ratio>();
+
+        let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
+        let v_maxv = duty * CPU_ADC_VREF;
+        let max_v = 4.0 * v_maxv;
+
+        (max_v, MAX_TEC_V)
     }
 
     pub fn set_max_i_pos(
