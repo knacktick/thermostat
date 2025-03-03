@@ -1,7 +1,7 @@
 {
   description = "Firmware for the Sinara 8451 Thermostat";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
   inputs.rust-overlay = {
     url = "github:oxalica/rust-overlay";
     inputs.nixpkgs.follows = "nixpkgs";
@@ -64,7 +64,10 @@
         format = "pyproject";
         src = "${self}/pythermostat";
 
-        nativeBuildInputs = [ pkgs.qt6.wrapQtAppsHook ];
+        nativeBuildInputs = [
+          pkgs.python3Packages.setuptools
+          pkgs.qt6.wrapQtAppsHook
+        ];
         propagatedBuildInputs =
           [ pkgs.qt6.qtbase ]
           ++ (with pkgs.python3Packages; [
