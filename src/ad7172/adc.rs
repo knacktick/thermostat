@@ -3,10 +3,10 @@ use super::{
     regs::{self, Register, RegisterData},
     DigitalFilterOrder, Input, Mode, PostFilter, RefSource,
 };
-use core::fmt;
+use core::{fmt, marker::PhantomData};
 use log::{info, warn};
 use stm32f4xx_hal::hal::{blocking::spi::Transfer, digital::v2::OutputPin};
-use uom::si::{electric_potential::volt, f64::ElectricPotential};
+use uom::si::f64::ElectricPotential;
 
 /// AD7172-2 implementation
 ///
@@ -285,7 +285,11 @@ impl ChannelCalibration {
         let data = data + (self.offset as i32 - 0x80_0000) as f64;
         let data = data / (2 << 23) as f64;
 
-        const V_REF: f64 = 3.3;
-        ElectricPotential::new::<volt>(data * V_REF / 0.75)
+        const V_REF: ElectricPotential = ElectricPotential {
+            dimension: PhantomData,
+            units: PhantomData,
+            value: 3.3,
+        };
+        data * V_REF / 0.75
     }
 }

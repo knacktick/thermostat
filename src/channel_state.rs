@@ -4,12 +4,10 @@ use crate::{
     config::OutputLimits,
     pid,
 };
+use core::marker::PhantomData;
 use num_traits::Zero;
 use smoltcp::time::{Duration, Instant};
 use uom::si::{
-    electric_current::ampere,
-    electric_potential::volt,
-    electrical_resistance::ohm,
     f64::{
         ElectricCurrent, ElectricPotential, ElectricalResistance, ThermodynamicTemperature, Time,
     },
@@ -17,8 +15,16 @@ use uom::si::{
     time::millisecond,
 };
 
-const R_INNER: f64 = 2.0 * 5100.0;
-const VREF_SENS: f64 = 3.3 / 2.0;
+const R_INNER: ElectricalResistance = ElectricalResistance {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 2.0 * 5100.0,
+};
+const VREF_SENS: ElectricPotential = ElectricPotential {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 3.3 / 2.0,
+};
 
 pub struct ChannelState {
     pub adc_data: Option<u32>,
@@ -91,10 +97,8 @@ impl ChannelState {
 
     /// Get `SENS[01]` input resistance
     pub fn get_sens(&self) -> Option<ElectricalResistance> {
-        let r_inner = ElectricalResistance::new::<ohm>(R_INNER);
-        let vref = ElectricPotential::new::<volt>(VREF_SENS);
         let adc_input = self.get_adc()?;
-        let r = r_inner * adc_input / (vref - adc_input);
+        let r = R_INNER * adc_input / (VREF_SENS - adc_input);
         Some(r)
     }
 

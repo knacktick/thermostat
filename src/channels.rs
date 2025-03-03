@@ -32,7 +32,11 @@ pub enum PinsAdcReadTarget {
 }
 
 pub const CHANNELS: usize = 2;
-const R_SENSE: f64 = 0.05;
+const R_SENSE: ElectricalResistance = ElectricalResistance {
+    dimension: PhantomData,
+    units: PhantomData,
+    value: 0.05,
+};
 
 const CPU_ADC_VREF: ElectricPotential = ElectricPotential {
     dimension: PhantomData,
@@ -176,11 +180,10 @@ impl Channels {
             _ => unreachable!(),
         };
         let center_point = vref_meas;
-        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
-        let voltage = negate * i_set * 10.0 * r_sense + center_point;
+        let voltage = negate * i_set * 10.0 * R_SENSE + center_point;
         let voltage = self.set_dac(channel, voltage);
 
-        negate * (voltage - center_point) / (10.0 * r_sense)
+        negate * (voltage - center_point) / (10.0 * R_SENSE)
     }
 
     /// AN4073: ADC Reading Dispersion can be reduced through Averaging
@@ -439,7 +442,6 @@ impl Channels {
         channel: usize,
         max_i_pos: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
-        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let pin = match self.channel_state(channel).polarity {
             Polarity::Normal => PwmPin::MaxIPos,
             Polarity::Reversed => PwmPin::MaxINeg,
@@ -447,12 +449,12 @@ impl Channels {
 
         let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
         self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
-        let v_maxip = 10.0 * (max_i_pos * r_sense);
+        let v_maxip = 10.0 * (max_i_pos * R_SENSE);
         let duty = (v_maxip / CPU_ADC_VREF).get::<ratio>();
 
         let duty = self.set_pwm(channel, pin, duty);
         let v_maxip = duty * CPU_ADC_VREF;
-        let max_i_pos = v_maxip / 10.0 / r_sense;
+        let max_i_pos = v_maxip / 10.0 / R_SENSE;
 
         (max_i_pos, MAX_TEC_I)
     }
@@ -462,7 +464,6 @@ impl Channels {
         channel: usize,
         max_i_neg: ElectricCurrent,
     ) -> (ElectricCurrent, ElectricCurrent) {
-        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let pin = match self.channel_state(channel).polarity {
             Polarity::Normal => PwmPin::MaxINeg,
             Polarity::Reversed => PwmPin::MaxIPos,
@@ -470,12 +471,12 @@ impl Channels {
 
         let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
         self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
-        let v_maxin = 10.0 * (max_i_neg * r_sense);
+        let v_maxin = 10.0 * (max_i_neg * R_SENSE);
         let duty = (v_maxin / CPU_ADC_VREF).get::<ratio>();
 
         let duty = self.set_pwm(channel, pin, duty);
         let v_maxin = duty * CPU_ADC_VREF;
-        let max_i_neg = v_maxin / 10.0 / r_sense;
+        let max_i_neg = v_maxin / 10.0 / R_SENSE;
 
         (max_i_neg, MAX_TEC_I)
     }
