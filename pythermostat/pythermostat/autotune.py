@@ -119,13 +119,13 @@ class PIDAutotune:
         self._last_run_timestamp = now
 
         # check input and change relay state if necessary
-        if self._state == PIDAutotuneState.RELAY_STEP_UP
-                and input_val > self._setpoint + self._noiseband:
+        if (self._state == PIDAutotuneState.RELAY_STEP_UP
+                and input_val > self._setpoint + self._noiseband):
             self._state = PIDAutotuneState.RELAY_STEP_DOWN
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
-        elif self._state == PIDAutotuneState.RELAY_STEP_DOWN
-                and input_val < self._setpoint - self._noiseband:
+        elif (self._state == PIDAutotuneState.RELAY_STEP_DOWN
+                and input_val < self._setpoint - self._noiseband):
             self._state = PIDAutotuneState.RELAY_STEP_UP
             logging.debug('switched state: {0}'.format(self._state))
             logging.debug('input: {0}'.format(input_val))
