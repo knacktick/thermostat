@@ -5,9 +5,11 @@ use crate::{
     command_parser::{CenterPoint, Polarity},
     pid,
 };
-use num_traits::Zero;
 use serde::{Deserialize, Serialize};
-use uom::si::f64::{ElectricCurrent, ElectricPotential};
+use uom::{
+    si::f64::{ElectricCurrent, ElectricPotential},
+    ConstZero,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelConfig {
@@ -33,7 +35,7 @@ impl ChannelConfig {
 
         let state = channels.channel_state(channel);
         let i_set = if state.pid_engaged {
-            ElectricCurrent::zero()
+            ElectricCurrent::ZERO
         } else {
             state.i_set
         };

@@ -11,17 +11,19 @@ use crate::{
 };
 use core::marker::PhantomData;
 use heapless::{consts::U2, Vec};
-use num_traits::Zero;
 use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
-use uom::si::{
-    electric_current::ampere,
-    electric_potential::{millivolt, volt},
-    electrical_resistance::ohm,
-    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, Time},
-    ratio::ratio,
-    thermodynamic_temperature::degree_celsius,
+use uom::{
+    si::{
+        electric_current::ampere,
+        electric_potential::{millivolt, volt},
+        electrical_resistance::ohm,
+        f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, Time},
+        ratio::ratio,
+        thermodynamic_temperature::degree_celsius,
+    },
+    ConstZero,
 };
 
 pub enum PinsAdcReadTarget {
@@ -99,7 +101,7 @@ impl Channels {
         };
         for channel in 0..CHANNELS {
             channels.calibrate_dac_value(channel);
-            channels.set_i(channel, ElectricCurrent::zero());
+            channels.set_i(channel, ElectricCurrent::ZERO);
         }
         channels
     }
@@ -307,7 +309,7 @@ impl Channels {
     /// thermostat.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let samples = 50;
-        let mut target_voltage = ElectricPotential::zero();
+        let mut target_voltage = ElectricPotential::ZERO;
         for _ in 0..samples {
             target_voltage += self.get_center(channel);
         }
@@ -330,7 +332,7 @@ impl Channels {
 
                 let dac_feedback = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 64);
                 let error = target_voltage - dac_feedback;
-                if error < ElectricPotential::zero() {
+                if error < ElectricPotential::ZERO {
                     break;
                 } else if error < best_error {
                     best_error = error;
@@ -347,7 +349,7 @@ impl Channels {
         }
 
         // Reset
-        self.set_dac(channel, ElectricPotential::zero());
+        self.set_dac(channel, ElectricPotential::ZERO);
     }
 
     // power up TEC
@@ -425,7 +427,7 @@ impl Channels {
         channel: usize,
         max_v: ElectricPotential,
     ) -> (ElectricPotential, ElectricPotential) {
-        let max_v = max_v.min(MAX_TEC_V).max(ElectricPotential::zero());
+        let max_v = max_v.min(MAX_TEC_V).max(ElectricPotential::ZERO);
         self.channel_state(channel).output_limits.max_v = max_v;
         let v_maxv = max_v / 4.0;
         let duty = (v_maxv / CPU_ADC_VREF).get::<ratio>();
@@ -447,7 +449,7 @@ impl Channels {
             Polarity::Reversed => PwmPin::MaxINeg,
         };
 
-        let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::zero());
+        let max_i_pos = max_i_pos.min(MAX_TEC_I).max(ElectricCurrent::ZERO);
         self.channel_state(channel).output_limits.max_i_pos = max_i_pos;
         let v_maxip = 10.0 * (max_i_pos * R_SENSE);
         let duty = (v_maxip / CPU_ADC_VREF).get::<ratio>();
@@ -469,7 +471,7 @@ impl Channels {
             Polarity::Reversed => PwmPin::MaxIPos,
         };
 
-        let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::zero());
+        let max_i_neg = max_i_neg.min(MAX_TEC_I).max(ElectricCurrent::ZERO);
         self.channel_state(channel).output_limits.max_i_neg = max_i_neg;
         let v_maxin = 10.0 * (max_i_neg * R_SENSE);
         let duty = (v_maxin / CPU_ADC_VREF).get::<ratio>();

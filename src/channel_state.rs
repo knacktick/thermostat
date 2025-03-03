@@ -5,14 +5,17 @@ use crate::{
     pid,
 };
 use core::marker::PhantomData;
-use num_traits::Zero;
 use smoltcp::time::{Duration, Instant};
-use uom::si::{
-    f64::{
-        ElectricCurrent, ElectricPotential, ElectricalResistance, ThermodynamicTemperature, Time,
+use uom::{
+    si::{
+        f64::{
+            ElectricCurrent, ElectricPotential, ElectricalResistance, ThermodynamicTemperature,
+            Time,
+        },
+        thermodynamic_temperature::degree_celsius,
+        time::millisecond,
     },
-    thermodynamic_temperature::degree_celsius,
-    time::millisecond,
+    ConstZero,
 };
 
 const R_INNER: ElectricalResistance = ElectricalResistance {
@@ -51,12 +54,12 @@ impl ChannelState {
             // default: 10 Hz
             adc_interval: Duration::from_millis(100),
             center: CenterPoint::VRef,
-            dac_value: ElectricPotential::zero(),
-            i_set: ElectricCurrent::zero(),
+            dac_value: ElectricPotential::ZERO,
+            i_set: ElectricCurrent::ZERO,
             output_limits: OutputLimits {
-                max_v: ElectricPotential::zero(),
-                max_i_pos: ElectricCurrent::zero(),
-                max_i_neg: ElectricCurrent::zero(),
+                max_v: ElectricPotential::ZERO,
+                max_i_pos: ElectricCurrent::ZERO,
+                max_i_neg: ElectricCurrent::ZERO,
             },
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
