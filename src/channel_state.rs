@@ -51,8 +51,8 @@ impl ChannelState {
             // default: 10 Hz
             adc_interval: Duration::from_millis(100),
             center: CenterPoint::VRef,
-            dac_value: ElectricPotential::new::<volt>(0.0),
-            i_set: ElectricCurrent::new::<ampere>(0.0),
+            dac_value: ElectricPotential::zero(),
+            i_set: ElectricCurrent::zero(),
             output_limits: OutputLimits {
                 max_v: ElectricPotential::zero(),
                 max_i_pos: ElectricCurrent::zero(),

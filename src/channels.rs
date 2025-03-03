@@ -99,7 +99,7 @@ impl Channels {
         };
         for channel in 0..CHANNELS {
             channels.calibrate_dac_value(channel);
-            channels.set_i(channel, ElectricCurrent::new::<ampere>(0.0));
+            channels.set_i(channel, ElectricCurrent::zero());
         }
         channels
     }
@@ -307,7 +307,7 @@ impl Channels {
     /// thermostat.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let samples = 50;
-        let mut target_voltage = ElectricPotential::new::<volt>(0.0);
+        let mut target_voltage = ElectricPotential::zero();
         for _ in 0..samples {
             target_voltage += self.get_center(channel);
         }
@@ -330,7 +330,7 @@ impl Channels {
 
                 let dac_feedback = self.adc_read(channel, PinsAdcReadTarget::DacVfb, 64);
                 let error = target_voltage - dac_feedback;
-                if error < ElectricPotential::new::<volt>(0.0) {
+                if error < ElectricPotential::zero() {
                     break;
                 } else if error < best_error {
                     best_error = error;
@@ -347,7 +347,7 @@ impl Channels {
         }
 
         // Reset
-        self.set_dac(channel, ElectricPotential::new::<volt>(0.0));
+        self.set_dac(channel, ElectricPotential::zero());
     }
 
     // power up TEC
