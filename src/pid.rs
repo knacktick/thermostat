@@ -56,16 +56,17 @@ impl Controller {
     //       + x2 * kd
     // y0  = clip(y0', ymin, ymax)
     pub fn update(&mut self, input: f64) -> f64 {
-        let mut output: f64 = self.y1 - self.target * f64::from(self.parameters.ki)
-            + input * f64::from(self.parameters.kp + self.parameters.ki + self.parameters.kd)
-            - self.x1 * f64::from(self.parameters.kp + 2.0 * self.parameters.kd)
-            + self.x2 * f64::from(self.parameters.kd);
-        if output < self.parameters.output_min.into() {
-            output = self.parameters.output_min.into();
-        }
-        if output > self.parameters.output_max.into() {
-            output = self.parameters.output_max.into();
-        }
+        let kp = self.parameters.kp as f64;
+        let ki = self.parameters.ki as f64;
+        let kd = self.parameters.kd as f64;
+
+        #[rustfmt::skip]
+        let mut output = self.y1 - ki * self.target
+            + input * (kp + ki + kd)
+            - self.x1 * (kp + 2.0 * kd)
+            + self.x2 * kd;
+        output = output.clamp(self.parameters.output_min.into(), self.parameters.output_max.into());
+
         self.x2 = self.x1;
         self.x1 = input;
         self.u1 = self.target;
@@ -79,10 +80,6 @@ impl Controller {
             parameters: self.parameters.clone(),
             target: self.target,
         }
-    }
-
-    pub fn update_ki(&mut self, new_ki: f32) {
-        self.parameters.ki = new_ki;
     }
 }
 

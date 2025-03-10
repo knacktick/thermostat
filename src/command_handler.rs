@@ -229,7 +229,7 @@ impl Handler {
         match parameter {
             Target => pid.target = value,
             KP => pid.parameters.kp = value as f32,
-            KI => pid.update_ki(value as f32),
+            KI => pid.parameters.ki = value as f32,
             KD => pid.parameters.kd = value as f32,
             OutputMin => pid.parameters.output_min = value as f32,
             OutputMax => pid.parameters.output_max = value as f32,
