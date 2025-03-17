@@ -99,15 +99,15 @@ dependencies = [
  "aligned",
  "bare-metal 0.2.5",
  "bitfield",
- "cortex-m 0.7.4",
+ "cortex-m 0.7.7",
  "volatile-register",
 ]
 
 [[package]]
 name = "cortex-m"
-version = "0.7.4"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37ff967e867ca14eba0c34ac25cd71ea98c678e741e3915d923999bb2fe7c826"
+checksum = "8ec610d8f49840a5b376c69663b6369e71f4b34484b9b2eb29fb918d92516cb9"
 dependencies = [
  "bare-metal 0.2.5",
  "bitfield",
@@ -173,7 +173,7 @@ version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bffa6c1454368a6aa4811ae60964c38e6996d397ff8095a8b9211b1c1f749bc"
 dependencies = [
- "cortex-m 0.7.4",
+ "cortex-m 0.6.7",
 ]
 
 [[package]]
@@ -371,7 +371,7 @@ version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d55dedd501dfd02514646e0af4d7016ce36bc12ae177ef52056989966a1eec"
 dependencies = [
- "cortex-m 0.7.4",
+ "cortex-m 0.6.7",
  "cortex-m-semihosting",
 ]
 
@@ -520,7 +520,7 @@ version = "0.2.0"
 source = "git+https://github.com/stm32-rs/stm32-eth.git?rev=3759c5c9#3759c5c99c0ab69bb71759030766bc0fba0b6cde"
 dependencies = [
  "aligned",
- "cortex-m 0.7.4",
+ "cortex-m 0.7.7",
  "smoltcp",
  "stm32f4xx-hal",
  "volatile-register",
@@ -533,7 +533,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da3d56009c8f32e4f208dbea17df72484154d1040a8969b75d8c73eb7b18fe8f"
 dependencies = [
  "bare-metal 0.2.5",
- "cortex-m 0.7.4",
+ "cortex-m 0.6.7",
  "cortex-m-rt 0.6.13",
  "vcell",
 ]
@@ -546,7 +546,7 @@ checksum = "3a06fde2dd27c0ba934c9e69b62af66eb1c20dbb6d741b187a763912e9892d13"
 dependencies = [
  "bare-metal 1.0.0",
  "cast",
- "cortex-m 0.7.4",
+ "cortex-m 0.7.7",
  "cortex-m-rt 0.7.1",
  "embedded-dma",
  "embedded-hal",
@@ -587,7 +587,7 @@ dependencies = [
  "bare-metal 1.0.0",
  "bit_field",
  "byteorder",
- "cortex-m 0.6.7",
+ "cortex-m 0.7.7",
  "cortex-m-log",
  "cortex-m-rt 0.6.13",
  "eeprom24x",
