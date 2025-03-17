@@ -143,7 +143,7 @@
                ],
                "format": "{value:.4f} °C",
                "thermostat:set_param": {
-                  "topic": "s-h",
+                  "topic": "b-p",
                   "field": "t0"
                },
                "lock": false
@@ -156,7 +156,7 @@
                "siPrefix": true,
                "suffix": "Ω",
                "thermostat:set_param": {
-                  "topic": "s-h",
+                  "topic": "b-p",
                   "field": "r0"
                },
                "lock": false
@@ -169,7 +169,7 @@
                "suffix": "K",
                "decimals": 4,
                "thermostat:set_param": {
-                  "topic": "s-h",
+                  "topic": "b-p",
                   "field": "b"
                },
                "lock": false
