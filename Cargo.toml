@@ -18,7 +18,7 @@ panic-halt = "1.0"
 panic-semihosting = { version = "0.5", optional = true }
 log = "0.4"
 bare-metal = "1"
-cortex-m = { version = "0.7", features = ["inline-asm"] }
+cortex-m = "0.7"
 cortex-m-rt = { version = "0.6", features = ["device"] }
 cortex-m-log = { version = "0.6", features = ["log-integration"] }
 stm32f4xx-hal = { version = "=0.10.1", features = ["rt", "stm32f427", "usb_fs"] }
