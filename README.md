@@ -69,13 +69,20 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program target/thumbv
 
 ## GUI Usage
 
-A GUI has been developed for easy configuration and plotting of key parameters.
+The Thermostat Control Panel is available for easy configuration and plotting of key parameters.
+It is included in the enclosed PyThermostat library, developed based on the Python libraries PyQt and PyQtGraph.
 
-The Python GUI program is located at pythermostat/pythermostat/control_panel.py, and is developed based on the Python libraries PyQt and PyQtGraph. The GUI can be configured and
-launched automatically by running:
+Launch it by either running:
 
+```sh
+nix run git+https://git.m-labs.hk/M-Labs/thermostat#control_panel
 ```
-nix run .#control_panel
+
+Or, without Nix, run it after installing the PyThermostat library:
+
+```sh
+pip install git+https://git.m-labs.hk/M-Labs/thermostat#subdirectory=pythermostat
+thermostat_control_panel
 ```
 
 ## Command Line Usage
