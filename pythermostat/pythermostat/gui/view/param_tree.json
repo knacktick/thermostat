@@ -117,7 +117,7 @@
                      "step": 0.1,
                      "limits": [
                         0,
-                        5
+                        4.3
                      ],
                      "siPrefix": true,
                      "suffix": "V",

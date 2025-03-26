@@ -109,7 +109,7 @@ formatted as line-delimited JSON.
 | `output`                                  | Show current output settings                                                  |
 | `output <0/1> max_i_pos <amp>`            | Set maximum positive output current, clamped to [0, 2]                        |
 | `output <0/1> max_i_neg <amp>`            | Set maximum negative output current, clamped to [0, 2]                        |
-| `output <0/1> max_v <volt>`               | Set maximum output voltage, clamped to [0, 4]                                 |
+| `output <0/1> max_v <volt>`               | Set maximum output voltage, clamped to [0, 4.3]                               |
 | `output <0/1> i_set <amp>`                | Disengage PID, set fixed output current, clamped to [-2, 2]                   |
 | `output <0/1> polarity <normal/reversed>` | Set output current polarity, with 'normal' being the front panel polarity     |
 | `output <0/1> pid`                        | Let output current to be controlled by the PID                                |

@@ -55,7 +55,7 @@ pub const MAX_TEC_I: ElectricCurrent = ElectricCurrent {
 pub const MAX_TEC_V: ElectricPotential = ElectricPotential {
     dimension: PhantomData,
     units: PhantomData,
-    value: 4.0,
+    value: 4.3,
 };
 // DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
 const DAC_OUT_V_MAX: ElectricPotential = ElectricPotential {
