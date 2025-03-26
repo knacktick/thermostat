@@ -81,7 +81,7 @@
 
         dontWrapQtApps = true;
         postFixup = ''
-          wrapQtApp "$out/bin/thermostat_qt"
+          wrapQtApp "$out/bin/thermostat_control_panel"
         '';
       };
 
@@ -106,9 +106,9 @@
         default = thermostat;
       };
 
-      apps.x86_64-linux.thermostat_gui = {
+      apps.x86_64-linux.control_panel = {
         type = "app";
-        program = "${self.packages.x86_64-linux.pythermostat}/bin/thermostat_qt";
+        program = "${pythermostat}/bin/thermostat_control_panel";
       };
 
       hydraJobs = {

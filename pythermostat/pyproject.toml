@@ -20,7 +20,7 @@ dependencies = [
 
 [project.gui-scripts]
 thermostat_plot = "pythermostat.plot:main"
-thermostat_qt = "pythermostat.thermostat_qt:main"
+thermostat_control_panel = "pythermostat.control_panel:main"
 
 [project.scripts]
 thermostat_autotune = "pythermostat.autotune:main"

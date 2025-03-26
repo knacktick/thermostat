@@ -71,11 +71,11 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program target/thumbv
 
 A GUI has been developed for easy configuration and plotting of key parameters.
 
-The Python GUI program is located at pythermostat/pythermostat/thermostat_qt.py, and is developed based on the Python libraries PyQt and PyQtGraph. The GUI can be configured and
+The Python GUI program is located at pythermostat/pythermostat/control_panel.py, and is developed based on the Python libraries PyQt and PyQtGraph. The GUI can be configured and
 launched automatically by running:
 
 ```
-nix run .#thermostat_gui
+nix run .#control_panel
 ```
 
 ## Command Line Usage

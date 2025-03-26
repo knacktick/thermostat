@@ -1,4 +1,4 @@
-"""GUI for the Sinara 8451 Thermostat"""
+"""GUI Control Panel for the Sinara 8451 Thermostat"""
 
 import asyncio
 import logging
