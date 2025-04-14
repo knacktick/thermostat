@@ -1,3 +1,4 @@
+import argparse
 import math
 import logging
 import time
@@ -10,6 +11,55 @@ from pythermostat.client import Client
 # See https://github.com/hirschmann/pid-autotune
 # Which is in turn based on a fork of Arduino PID AutoTune Library
 # See https://github.com/t0mpr1c3/Arduino-PID-AutoTune-Library
+
+
+def get_argparser():
+    parser = argparse.ArgumentParser(description="Thermostat PID Autotuning Utility")
+
+    parser.add_argument(
+        "-c",
+        "--channel",
+        default=0,
+        type=int,
+        help="Thermostat channel to autotune",
+    )
+    parser.add_argument(
+        "-t",
+        "--target",
+        default=20,
+        type=float,
+        help="Target temperature of the autotune routine, degrees Celcius",
+    )
+    parser.add_argument(
+        "-s",
+        "--step",
+        default=1,
+        type=float,
+        help="Value by which output will be increased/decreased from zero, amps",
+    )
+    parser.add_argument(
+        "-b",
+        "--lookback",
+        default=3,
+        type=float,
+        help="Reference period for local minima/maxima, seconds",
+    )
+    parser.add_argument(
+        "-n",
+        "--noiseband",
+        default=1.5,
+        type=float,
+        help="Determines by how much the input value must overshoot/undershoot the setpoint, degrees Celcius",
+    )
+    parser.add_argument(
+        "-l",
+        "--log",
+        dest="logLevel",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level",
+    )
+
+    return parser
 
 
 class PIDAutotuneState(Enum):
@@ -237,20 +287,22 @@ class PIDAutotune:
 
 
 def main():
+    args = get_argparser().parse_args()
+    if args.logLevel:
+        logging.basicConfig(level=getattr(logging, args.logLevel))
+
     # Auto tune parameters
     # Thermostat channel
-    channel = 0
+    channel = args.channel
     # Target temperature of the autotune routine, celcius
-    target_temperature = 20
+    target_temperature = args.target
     # Value by which output will be increased/decreased from zero, amps
-    output_step = 1
+    output_step = args.step
     # Reference period for local minima/maxima, seconds
-    lookback = 3
+    lookback = args.lookback
     # Determines by how much the input value must
     # overshoot/undershoot the setpoint, celcius
-    noiseband = 1.5
-
-    # logging.basicConfig(level=logging.DEBUG)
+    noiseband = args.noiseband
 
     thermostat = Client()
 
