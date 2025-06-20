@@ -137,6 +137,13 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="apply_settings">
+               <property name="text">
+                <string>Apply</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
            <widget class="QWidget" name="ch1_tab">

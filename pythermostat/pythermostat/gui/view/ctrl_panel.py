@@ -83,6 +83,11 @@ class CtrlPanel(QObject):
             tree.setParameters(self.params[i], showTop=False)
             self.params[i].setValue = self._setValue
             self.params[i].sigTreeStateChanged.connect(self.send_command)
+            # print( self.params[i].child("output", "control_method", "target").itemClass )
+            # pTypes.numeric.NumericParameterItem(self.params[i].child("output", "control_method", "target"), 0).makeWidget().sigChanged.connect(self._setToSetpointContextMenu)
+            self.params[i].child("output", "control_method", "target").sigValueChanged.connect(self._setToSetpointContextMenu)
+            # print(type(self.params[i].child("output", "control_method", "target")))
+
 
             self.params[i].child("pid", "pid_autotune", "run_pid").sigActivated.connect(
                 partial(self.pid_auto_tune_request, i)
@@ -94,6 +99,21 @@ class CtrlPanel(QObject):
         self.thermostat.output_update.connect(self.update_output)
         self.thermostat.postfilter_update.connect(self.update_postfilter)
         self.autotuners.autotune_state_changed.connect(self.update_pid_autotune)
+
+    def _setToSetpointContextMenu(self):
+        self._button = QtWidgets.QPushButton("💾")
+        self._button = setAutoDefault(False)
+        # defaultBtn.setFixedWidth(20)
+        # defaultBtn.setFixedHeight(20)
+        # defaultBtn.setIcon(icons.getGraphIcon('default'))
+        # defaultBtn.clicked.connect(self.defaultClicked)
+
+        self._button.clicked.connect(self._handleApplyButton)
+        # self.addWidget(self._button)
+    
+    def _handleApplyButton(self):
+        print("Applied :D")
+
 
     def _setValue(self, value, blockSignal=None):
         """
