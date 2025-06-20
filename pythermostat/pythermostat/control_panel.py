@@ -4,6 +4,7 @@ import asyncio
 import logging
 import argparse
 import importlib.resources
+import signal
 import json
 from PyQt6 import QtWidgets, QtGui, uic
 from PyQt6.QtCore import Qt, pyqtSlot
@@ -251,10 +252,12 @@ async def coro_main():
 
     await app_quit_event.wait()
 
+async def close():
+    print("SIGINT registered")
 
 def main():
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     qasync.run(coro_main())
-
 
 if __name__ == "__main__":
     main()
