@@ -84,12 +84,6 @@ class CtrlPanel(QObject):
             self.params[i].setValue = self._setValue
             self.params[i].sigTreeStateChanged.connect(self.send_command)
 
-            self.params[i].child("save").sigActivated.connect(
-                partial(self.save_settings, i)
-            )
-            self.params[i].child("load").sigActivated.connect(
-                partial(self.load_settings, i)
-            )
             self.params[i].child("pid", "pid_autotune", "run_pid").sigActivated.connect(
                 partial(self.pid_auto_tune_request, i)
             )
@@ -268,25 +262,6 @@ class CtrlPanel(QObject):
                     "PID Autotune Failed",
                     f"Channel {ch} PID Autotune has failed.",
                 )
-
-    @asyncSlot(int)
-    async def load_settings(self, ch):
-        await self.thermostat.load_cfg(ch)
-
-        self.info_box.display_info_box(
-            f"Channel {ch} settings loaded",
-            f"Channel {ch} settings has been loaded from flash.",
-        )
-
-    @asyncSlot(int)
-    async def save_settings(self, ch):
-        await self.thermostat.save_cfg(ch)
-
-        self.info_box.display_info_box(
-            f"Channel {ch} settings saved",
-            f"Channel {ch} settings has been saved to flash.\n"
-            "It will be loaded on Thermostat reset, or when settings are explicitly loaded.",
-        )
 
     @asyncSlot()
     async def pid_auto_tune_request(self, ch=0):

@@ -6,7 +6,7 @@ import argparse
 import importlib.resources
 import json
 from PyQt6 import QtWidgets, QtGui, uic
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import Qt, pyqtSlot
 import qasync
 from qasync import asyncSlot, asyncClose
 from pythermostat.autotune import PIDAutotuneState
@@ -14,7 +14,7 @@ from pythermostat.gui.model.thermostat import Thermostat, ThermostatConnectionSt
 from pythermostat.gui.model.pid_autotuner import PIDAutoTuner
 from pythermostat.gui.view.ctrl_panel import CtrlPanel
 from pythermostat.gui.view.info_box import InfoBox
-from pythermostat.gui.view.menus import PlotOptionsMenu, ThermostatSettingsMenu, ConnectionDetailsMenu
+from pythermostat.gui.view.menus import PlotOptionsMenu, ThermostatSettingsMenu, ConnectionDetailsMenu, SettingsMenu
 from pythermostat.gui.view.live_plot_view import LiveDataPlotter
 from pythermostat.gui.view.zero_limits_warning_view import ZeroLimitsWarningView
 
@@ -99,6 +99,10 @@ class MainWindow(QtWidgets.QMainWindow):
             get_ctrl_panel_config(args),
         )
 
+        # Setting save menu
+        self.tabWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabWidget.customContextMenuRequested.connect(self.openSettingsContextMenu)
+
         # Graphs
         self._channel_graphs = LiveDataPlotter(
             self._thermostat,
@@ -131,6 +135,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.report_apply_btn.clicked.connect(
             lambda: self._thermostat.set_update_s(self.report_refresh_spin.value())
         )
+    
+    def openSettingsContextMenu(self, pos):
+        self._settings_menu = SettingsMenu(self._thermostat, self.tabWidget.currentIndex(), self._info_box)
+        action = self._settings_menu.exec(self.main_widget.mapToGlobal(pos))
 
     @asyncClose
     async def closeEvent(self, _event):

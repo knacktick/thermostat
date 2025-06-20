@@ -1,8 +1,56 @@
+from functools import partial
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import pyqtSlot, QSignalBlocker
 from qasync import asyncSlot
 from pythermostat.gui.model.thermostat import ThermostatConnectionState
 from pythermostat.gui.view.net_settings_input_diag import NetSettingsInputDiag
+
+class SettingsMenu(QtWidgets.QMenu):
+    def __init__(self, thermostat, current_tab, info_box):
+        super().__init__()
+        self._thermostat = thermostat
+        self._info_box = info_box
+        self._current_tab = current_tab
+
+        self._setup_menu_items()
+
+
+    def _setup_menu_items(self):
+        self.clear()
+
+        self._save_cur_cfg = QtGui.QAction(f"Save channel {self._current_tab} settings", self)
+        self._save_all_cfg = QtGui.QAction("Save all settings", self)                       
+        self._load_cur_cfg = QtGui.QAction(f"Load channel {self._current_tab} settings", self)
+        self._load_all_cfg = QtGui.QAction("Load all settings", self)                       
+
+        self._save_cur_cfg.triggered.connect(partial(self._save_settings, self._current_tab))
+        self._save_all_cfg.triggered.connect(partial(self._save_settings, ""))
+        self._load_cur_cfg.triggered.connect(partial(self._load_settings, self._current_tab))
+        self._load_all_cfg.triggered.connect(partial(self._load_settings, ""))
+
+        self.addAction(self._save_cur_cfg)
+        self.addAction(self._save_all_cfg)
+        self.addAction(self._load_cur_cfg)
+        self.addAction(self._load_all_cfg)
+
+    @asyncSlot(int)
+    async def _load_settings(self, ch):
+        await self._thermostat.load_cfg(ch)
+
+        self._info_box.display_info_box(
+            f"Channel {ch} settings loaded",
+            f"Channel {ch} settings has been loaded from flash.",
+        )
+
+    @asyncSlot(int)
+    async def _save_settings(self, ch):
+        await self._thermostat.save_cfg(ch)
+
+        self._info_box.display_info_box(
+            f"Channel {ch} settings saved",
+            f"Channel {ch} settings has been saved to flash.\n"
+            "It will be loaded on Thermostat reset, or when settings are explicitly loaded.",
+        )
 
 
 class ConnectionDetailsMenu(QtWidgets.QMenu):
@@ -208,30 +256,6 @@ class ThermostatSettingsMenu(QtWidgets.QMenu):
         self.ipv4_action = QtGui.QAction("Set IPv4 Settings", self)
         self.ipv4_action.triggered.connect(self.net_settings_request)
         self.addAction(self.ipv4_action)
-
-        @asyncSlot(bool)
-        async def load(_):
-            await self._thermostat.load_cfg()
-
-            self._info_box.display_info_box(
-                "Settings loaded", "All channel settings have been loaded from flash."
-            )
-
-        self.load_config_action = QtGui.QAction("Load Settings", self)
-        self.load_config_action.triggered.connect(load)
-        self.addAction(self.load_config_action)
-
-        @asyncSlot(bool)
-        async def save(_):
-            await self._thermostat.save_cfg()
-
-            self._info_box.display_info_box(
-                "Settings saved", "All channel settings have been saved to flash."
-            )
-
-        self.save_config_action = QtGui.QAction("Save Settings", self)
-        self.save_config_action.triggered.connect(save)
-        self.addAction(self.save_config_action)
 
         def about_thermostat():
             QtWidgets.QMessageBox.about(

@@ -374,18 +374,6 @@
                ]
             }
          ]
-      },
-      {
-         "name": "save",
-         "title": "Save to flash",
-         "type": "action",
-         "tip": "Save settings to thermostat, applies on reset"
-      },
-      {
-         "name": "load",
-         "title": "Load from flash",
-         "type": "action",
-         "tip": "Load settings from flash"
       }
    ]
 }
