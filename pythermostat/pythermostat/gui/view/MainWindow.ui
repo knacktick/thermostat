@@ -138,9 +138,9 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="apply_settings">
+              <widget class="QPushButton" name="apply_all_settings">
                <property name="text">
-                <string>Apply</string>
+                <string>Apply All Settings</string>
                </property>
               </widget>
              </item>

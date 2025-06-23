@@ -19,7 +19,7 @@ class SettingsMenu(QtWidgets.QMenu):
         self.clear()
 
         self._save_cur_cfg = QtGui.QAction(f"Save channel {self._current_tab} settings", self)
-        self._save_all_cfg = QtGui.QAction("Save all settings", self)                       
+        self._save_all_cfg = QtGui.QAction("Save all settings", self)
         self._load_cur_cfg = QtGui.QAction(f"Load channel {self._current_tab} settings", self)
         self._load_all_cfg = QtGui.QAction("Load all settings", self)                       
 

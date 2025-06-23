@@ -65,7 +65,7 @@
                   {
                      "name": "target",
                      "title": "Set Temperature",
-                     "type": "float",
+                     "type": "cool_float",
                      "value": 25,
                      "step": 0.1,
                      "limits": [

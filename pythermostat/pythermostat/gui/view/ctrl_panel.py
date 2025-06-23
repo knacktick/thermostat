@@ -1,13 +1,16 @@
 from functools import partial
+from PyQt6 import QtWidgets
+from PyQt6.QtGui import QAction
 from PyQt6.QtCore import pyqtSignal, QObject, QSignalBlocker, pyqtSlot
 import pyqtgraph.parametertree.parameterTypes as pTypes
 from pyqtgraph.parametertree import (
     Parameter,
     registerParameterType,
+    registerParameterItemType,
 )
+from pyqtgraph.widgets.SpinBox import SpinBox
 from qasync import asyncSlot
 from pythermostat.autotune import PIDAutotuneState
-
 
 class MutexParameter(pTypes.ListParameter):
     """
@@ -42,8 +45,74 @@ class MutexParameter(pTypes.ListParameter):
             child_to_show.sigValueChanged.emit(child_to_show, child_to_show.value())
 
 
-registerParameterType("mutex", MutexParameter)
+class CoolSpinBox(SpinBox):
+    def __init__(self, param):
+        super().__init__()
+        self._param = param
+ 
+    def contextMenuEvent(self, ev):
+        self._stdMenu = QtWidgets.QLineEdit()
+        self._contextMenu = self._stdMenu.createStandardContextMenu()
+        self._contextMenu.addSeparator()
+        self._contextMenu.addAction(QAction("Set to measurement", self, triggered=self._setToMeasured))
+        self._contextMenu.popup(ev.globalPos())
+ 
+    def _setToMeasured(self):
+        self.setValue(self._param.parent().parent().parent().child("readings", "temperature").value())
+ 
+ 
+class CoolFloatParameterItem(pTypes.NumericParameterItem):
+    def __init__(self, param, depth=0):
+        super().__init__(param, depth)
+ 
+    def makeWidget(self):
+        opts = self.param.opts
+        t = opts['type']
+        defs = {
+            'value': 0, 'min': None, 'max': None,
+            'step': 1.0, 'dec': False,
+            'siPrefix': False, 'suffix': '', 'decimals': 3,
+        }
+        if t == 'int':
+            defs['int'] = True
+            defs['minStep'] = 1.0
+        for k in defs:
+            if k in opts:
+                defs[k] = opts[k]
+        if opts.get('limits') is not None:
+            defs['min'], defs['max'] = opts['limits']
+        w = CoolSpinBox(self.param)
+        w.setOpts(**defs)
+        w.sigChanged = w.sigValueChanged
+        w.sigChanging = w.sigValueChanging
+        return w
+ 
+    # def contextMenuEvent(self, ev):
+    #     self.contextMenu = QtWidgets.QMenu() # Put in global name space to prevent garbage collection
+    #     self.contextMenu.addSeparator()
+    
+    #     self._asd = QAction("asd", self)
+    #     self.contextMenu.addAction(asd)        
+    #     self.contextMenu.popup(ev.globalPos())
+ 
+    # def _asd(self):
+    #     print("clciked :3")
+ 
 
+class CoolSimpleParameter(pTypes.SimpleParameter):
+    @property
+    def itemClass(self):
+        return {
+            'bool': pTypes.BoolParameterItem,
+            'int': pTypes.NumericParameterItem,
+            'float': pTypes.NumericParameterItem,
+            'cool_float': CoolFloatParameterItem,
+            'str': pTypes.StrParameterItem,
+        }[self.opts['type']]
+
+
+registerParameterType("mutex", MutexParameter)
+registerParameterItemType("cool_float", CoolFloatParameterItem, CoolSimpleParameter)
 
 class CtrlPanel(QObject):
     def __init__(
@@ -83,11 +152,7 @@ class CtrlPanel(QObject):
             tree.setParameters(self.params[i], showTop=False)
             self.params[i].setValue = self._setValue
             self.params[i].sigTreeStateChanged.connect(self.send_command)
-            # print( self.params[i].child("output", "control_method", "target").itemClass )
-            # pTypes.numeric.NumericParameterItem(self.params[i].child("output", "control_method", "target"), 0).makeWidget().sigChanged.connect(self._setToSetpointContextMenu)
-            self.params[i].child("output", "control_method", "target").sigValueChanged.connect(self._setToSetpointContextMenu)
-            # print(type(self.params[i].child("output", "control_method", "target")))
-
+            # self.params[i].child("output", "control_method", "target").sigValueChanged.connect(self._setToSetpointContextMenu).
 
             self.params[i].child("pid", "pid_autotune", "run_pid").sigActivated.connect(
                 partial(self.pid_auto_tune_request, i)
@@ -99,21 +164,6 @@ class CtrlPanel(QObject):
         self.thermostat.output_update.connect(self.update_output)
         self.thermostat.postfilter_update.connect(self.update_postfilter)
         self.autotuners.autotune_state_changed.connect(self.update_pid_autotune)
-
-    def _setToSetpointContextMenu(self):
-        self._button = QtWidgets.QPushButton("💾")
-        self._button = setAutoDefault(False)
-        # defaultBtn.setFixedWidth(20)
-        # defaultBtn.setFixedHeight(20)
-        # defaultBtn.setIcon(icons.getGraphIcon('default'))
-        # defaultBtn.clicked.connect(self.defaultClicked)
-
-        self._button.clicked.connect(self._handleApplyButton)
-        # self.addWidget(self._button)
-    
-    def _handleApplyButton(self):
-        print("Applied :D")
-
 
     def _setValue(self, value, blockSignal=None):
         """
