@@ -31,7 +31,8 @@
             {
                "name": "control_method",
                "title": "Control Method",
-               "type": "mutex",
+               "type": "list",
+               "excludeCache": true,
                "limits": {
                   "Constant Current": "constant_current",
                   "Temperature PID": "temperature_pid"
@@ -46,13 +47,13 @@
                      "name": "i_set",
                      "title": "Set Current",
                      "type": "float",
+                     "excludeCache": false,
                      "value": 0,
                      "step": 100,
                      "limits": [
                         -2000,
                         2000
                      ],
-                     "triggerOnShow": true,
                      "decimals": 6,
                      "suffix": "mA",
                      "compactHeight": false,
@@ -66,6 +67,7 @@
                      "name": "target",
                      "title": "Set Temperature",
                      "type": "cool_float",
+                     "excludeCache": false,
                      "value": 25,
                      "step": 0.1,
                      "limits": [

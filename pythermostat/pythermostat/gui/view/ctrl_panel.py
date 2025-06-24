@@ -12,38 +12,6 @@ from pyqtgraph.widgets.SpinBox import SpinBox
 from qasync import asyncSlot
 from pythermostat.autotune import PIDAutotuneState
 
-class MutexParameter(pTypes.ListParameter):
-    """
-    Mutually exclusive parameter where only one of its children is visible at a time, list selectable.
-
-    The ordering of the list items determines which children will be visible.
-    """
-
-    def __init__(self, **opts):
-        super().__init__(**opts)
-
-        self.sigValueChanged.connect(self.show_chosen_child)
-        self.sigValueChanged.emit(self, self.opts["value"])
-
-    def _get_param_from_value(self, value):
-        if isinstance(self.opts["limits"], dict):
-            values_list = list(self.opts["limits"].values())
-        else:
-            values_list = self.opts["limits"]
-
-        return self.children()[values_list.index(value)]
-
-    @pyqtSlot(object, object)
-    def show_chosen_child(self, value):
-        for param in self.children():
-            param.hide()
-
-        child_to_show = self._get_param_from_value(value.value())
-        child_to_show.show()
-
-        if child_to_show.opts.get("triggerOnShow", None):
-            child_to_show.sigValueChanged.emit(child_to_show, child_to_show.value())
-
 
 class CoolSpinBox(SpinBox):
     def __init__(self, param):
@@ -111,10 +79,12 @@ class CoolSimpleParameter(pTypes.SimpleParameter):
         }[self.opts['type']]
 
 
-registerParameterType("mutex", MutexParameter)
 registerParameterItemType("cool_float", CoolFloatParameterItem, CoolSimpleParameter)
 
 class CtrlPanel(QObject):
+
+    sigCachedChangedSetting = pyqtSignal(bool)
+
     def __init__(
         self,
         thermostat,
@@ -131,6 +101,8 @@ class CtrlPanel(QObject):
         self.info_box = info_box
         self.trees_ui = trees_ui
         self.NUM_CHANNELS = len(trees_ui)
+        self._cachedChanges = {}
+        self._settingVisualUpdate = set()
 
         self.THERMOSTAT_PARAMETERS = [param_tree for i in range(self.NUM_CHANNELS)]
 
@@ -151,12 +123,23 @@ class CtrlPanel(QObject):
             tree.setHeaderHidden(True)
             tree.setParameters(self.params[i], showTop=False)
             self.params[i].setValue = self._setValue
-            self.params[i].sigTreeStateChanged.connect(self.send_command)
-            # self.params[i].child("output", "control_method", "target").sigValueChanged.connect(self._setToSetpointContextMenu).
+            self.params[i].sigTreeStateChanged.connect(self.cache_changes)
 
             self.params[i].child("pid", "pid_autotune", "run_pid").sigActivated.connect(
                 partial(self.pid_auto_tune_request, i)
             )
+
+            def _ctrlMeth(param, control_method="constant_current"):
+                name = "i_set" if control_method == "constant_current" else "target"
+                for item in param.children():
+                    if item.opts["name"] == name:
+                        item.show()
+                    else:
+                        item.hide()
+
+            self.params[i].child("output", "control_method").sigValueChanged.connect(_ctrlMeth)
+            
+            _ctrlMeth(self.params[i].child("output", "control_method"))
 
         self.thermostat.pid_update.connect(self.update_pid)
         self.thermostat.report_update.connect(self.update_report)
@@ -194,64 +177,83 @@ class CtrlPanel(QObject):
     def change_params_title(self, channel, path, title):
         self.params[channel].child(*path).setOpts(title=title)
 
+    @property
+    def cachedChanges(self):
+        return self._cachedChanges
+
     @asyncSlot(object, object)
-    async def send_command(self, param, changes):
-        """Translates parameter tree changes into thermostat set_param calls"""
+    async def cache_changes(self, param, changes):
         ch = param.channel
+        for inner_param, change_type, data in changes: 
+            if change_type != "value":
+                continue
+            
+            thermostat_param = inner_param.opts["thermostat:set_param"]
+            if inner_param.opts["type"] == "list":
+                match inner_param.name(), data:
+                    case "rate", None:
+                        thermostat_param = thermostat_param.copy()
+                        thermostat_param["field"] = "off"
+                        data = ""
+                    case "control_method", "constant_current":
+                        thermostat_param = thermostat_param.copy()
+                        thermostat_param["field"] = "i_set"
+                        data = inner_param.child("i_set").value()
+                    case "control_method", "temperature_pid":
+                        data = ""
 
-        for inner_param, change, data in changes:
-            if change == "value":
-                new_value = data
-                if "thermostat:set_param" in inner_param.opts:
-                    if inner_param.opts.get("suffix", None) == "mA":
-                        new_value /= 1000  # Given in mA
+            if not inner_param.opts.get("excludeCache", False):
+                self._cachedChanges[inner_param] = (ch, data, thermostat_param) #TODO: Make slimmer
+                self.sigCachedChangedSetting.emit(True)
+                continue
 
-                    thermostat_param = inner_param.opts["thermostat:set_param"]
+            await self.apply_setting(inner_param, ch, data, thermostat_param)
 
-                    # Handle thermostat command irregularities
-                    match inner_param.name(), new_value:
-                        case "rate", None:
-                            thermostat_param = thermostat_param.copy()
-                            thermostat_param["field"] = "off"
-                            new_value = ""
-                        case "control_method", "constant_current":
-                            return
-                        case "control_method", "temperature_pid":
-                            new_value = ""
+    async def apply_setting(self, param, channel, data, thermostat_param):
+        param.setOpts(lock=True)
+        await self.thermostat.set_param(channel=channel, value=data, **thermostat_param)
+        param.setOpts(lock=False)
 
-                    inner_param.setOpts(lock=True)
-                    await self.thermostat.set_param(
-                        channel=ch, value=new_value, **thermostat_param
-                    )
-                    inner_param.setOpts(lock=False)
+    def _checkIsInCachedChanges(self, setting):
+        for param in self._cachedChanges:
+            if setting == param.opts["name"]:
+                return True
+        return False
 
-                if "pid_autotune" in inner_param.opts:
-                    auto_tuner_param = inner_param.opts["pid_autotune"]
-                    self.autotuners.set_params(auto_tuner_param, ch, new_value)
+    def flushCachedSetting(self):
+        self._cachedChanges.clear()
+
+    def _handleCachedSettings(self, ch, data, path):
+        name = path[-1]
+        setting_param = self.params[ch].child(*path)
+        isCachedSetting = self._checkIsInCachedChanges(name)
+        isInSettingVisualUpdate = name in self._settingVisualUpdate
+        if not isCachedSetting and isInSettingVisualUpdate:
+            setting_param.setValue(data)
+            setting_param.setOpts(title=(setting_param.opts["title"])[0:-3])
+            for item in setting_param.items:
+                font = item.font(0);font.setBold(0);font.setUnderline(0)
+                item.setFont(0, font)
+            self._settingVisualUpdate.discard(name)
+        elif isCachedSetting and not isInSettingVisualUpdate:
+            setting_param.setOpts(title=setting_param.opts["title"] + " (*)")
+            for item in setting_param.items:
+                font = item.font(0);font.setBold(1);font.setUnderline(1)
+                item.setFont(0, font)
+            self._settingVisualUpdate.add(name)
+        elif not isCachedSetting and not isInSettingVisualUpdate:
+            setting_param.setValue(data)
 
     @pyqtSlot(list)
     def update_pid(self, pid_settings):
         for settings in pid_settings:
             channel = settings["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("pid", "kp").setValue(
-                    settings["parameters"]["kp"]
-                )
-                self.params[channel].child("pid", "ki").setValue(
-                    settings["parameters"]["ki"]
-                )
-                self.params[channel].child("pid", "kd").setValue(
-                    settings["parameters"]["kd"]
-                )
-                self.params[channel].child(
-                    "pid", "pid_output_clamping", "output_min"
-                ).setValue(settings["parameters"]["output_min"] * 1000)
-                self.params[channel].child(
-                    "pid", "pid_output_clamping", "output_max"
-                ).setValue(settings["parameters"]["output_max"] * 1000)
-                self.params[channel].child(
-                    "output", "control_method", "target"
-                ).setValue(settings["target"])
+                for name in ["kp", "ki", "kd"]:
+                    self._handleCachedSettings(channel, settings["parameters"][name], ("pid", name))
+                self._handleCachedSettings(channel, settings["parameters"]["output_min"]*1000, ("pid", "pid_output_clamping", "output_min"))
+                self._handleCachedSettings(channel, settings["parameters"]["output_max"]*1000, ("pid", "pid_output_clamping", "output_max"))
+                self._handleCachedSettings(channel, settings["target"], ("output", "control_method", "target"))
 
     @pyqtSlot(list)
     def update_report(self, report_data):
@@ -261,9 +263,7 @@ class CtrlPanel(QObject):
                 self.params[channel].child("output", "control_method").setValue(
                     "temperature_pid" if settings["pid_engaged"] else "constant_current"
                 )
-                self.params[channel].child(
-                    "output", "control_method", "i_set"
-                ).setValue(settings["i_set"] * 1000)
+                self._handleCachedSettings(channel, settings["i_set"]*1000, ("output", "control_method", "i_set"))
                 if settings["temperature"] is not None:
                     self.params[channel].child("readings", "temperature").setValue(
                         settings["temperature"]
@@ -278,39 +278,28 @@ class CtrlPanel(QObject):
         for sh_param in sh_data:
             channel = sh_param["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("thermistor", "t0").setValue(
-                    sh_param["params"]["t0"] - 273.15
-                )
-                self.params[channel].child("thermistor", "r0").setValue(
-                    sh_param["params"]["r0"]
-                )
-                self.params[channel].child("thermistor", "b").setValue(
-                    sh_param["params"]["b"]
-                )
+                self._handleCachedSettings(channel, sh_param["params"]["t0"]-273.15, ("thermistor", "t0"))
+                self._handleCachedSettings(channel, sh_param["params"]["r0"], ("thermistor", "r0"))
+                self._handleCachedSettings(channel, sh_param["params"]["b"], ("thermistor", "b"))
 
     @pyqtSlot(list)
     def update_output(self, output_data):
         for output_params in output_data:
             channel = output_params["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("output", "limits", "max_v").setValue(
-                    output_params["max_v"]
-                )
-                self.params[channel].child("output", "limits", "max_i_pos").setValue(
-                    output_params["max_i_pos"] * 1000
-                )
-                self.params[channel].child("output", "limits", "max_i_neg").setValue(
-                    output_params["max_i_neg"] * 1000
-                )
+                self._handleCachedSettings(channel, output_params["max_v"], ("output", "limits", "max_v"))
+                self._handleCachedSettings(channel, output_params["max_i_pos"]*1000, ("output", "limits", "max_i_pos"))
+                self._handleCachedSettings(channel, output_params["max_i_neg"]*1000, ("output", "limits", "max_i_neg"))
 
     @pyqtSlot(list)
     def update_postfilter(self, postfilter_data):
         for postfilter_params in postfilter_data:
             channel = postfilter_params["channel"]
             with QSignalBlocker(self.params[channel]):
-                self.params[channel].child("thermistor", "rate").setValue(
-                    postfilter_params["rate"]
-                )
+                self._handleCachedSettings(channel, postfilter_params["rate"], ("thermistor", "rate"))
+                # self.params[channel].child("thermistor", "rate").setValue(
+                #     postfilter_params["rate"]
+                # )
 
     def update_pid_autotune(self, ch, state):
         match state:

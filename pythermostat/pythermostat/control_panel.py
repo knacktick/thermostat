@@ -100,6 +100,10 @@ class MainWindow(QtWidgets.QMainWindow):
             get_ctrl_panel_config(args),
         )
 
+        self._ctrl_panel_view.sigCachedChangedSetting.connect(self.enableApplyAllSettingBtn)
+        self.apply_all_settings.clicked.connect(self.applyAllSettings)
+        self.apply_all_settings.setVisible(False)
+
         # Setting save menu
         self.tabWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tabWidget.customContextMenuRequested.connect(self.openSettingsContextMenu)
@@ -136,6 +140,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.report_apply_btn.clicked.connect(
             lambda: self._thermostat.set_update_s(self.report_refresh_spin.value())
         )
+
+    @pyqtSlot(bool)
+    def enableApplyAllSettingBtn(self):
+        self.apply_all_settings.setVisible(True)
+
+    @asyncSlot(bool)
+    async def applyAllSettings(self):
+        self.cachedChanges = self._ctrl_panel_view.cachedChanges
+        
+        for param in self.cachedChanges:
+            ch = self.cachedChanges[param][0]
+            data = self.cachedChanges[param][1]
+            thermostat_param = self.cachedChanges[param][2]
+            if param.opts.get("suffix", None) == "mA":
+                data /= 1000  # Given in mA
+            if not "pid_autotune" in param.opts:
+                await self._ctrl_panel_view.apply_setting(param, ch, data, thermostat_param)
+            else:
+                self._ctrl_panel_view.autotuners.set_params(param.opts["pid_autotune"], ch, param)
+        
+        self._ctrl_panel_view.flushCachedSetting()
+        self.apply_all_settings.setVisible(False)
+            
     
     def openSettingsContextMenu(self, pos):
         self._settings_menu = SettingsMenu(self._thermostat, self.tabWidget.currentIndex(), self._info_box)
