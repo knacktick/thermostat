@@ -2,7 +2,7 @@ from types import MethodType
 from functools import partial
 from PyQt6 import QtWidgets
 from PyQt6.QtGui import QAction
-from PyQt6.QtCore import pyqtSignal, QObject, QSignalBlocker, pyqtSlot, Qt
+from PyQt6.QtCore import pyqtSignal, QObject, QSignalBlocker, pyqtSlot
 import pyqtgraph.parametertree.parameterTypes as pTypes
 from pyqtgraph.parametertree import (
     Parameter,
@@ -36,6 +36,7 @@ class CtrlPanel(QObject):
         self.NUM_CHANNELS = len(trees_ui)
         self._cachedChanges = {}
         self._settingVisualUpdate = set()
+        self._currentCurrent = [0.0 for i in range(self.NUM_CHANNELS)]
 
         self.THERMOSTAT_PARAMETERS = [param_tree for i in range(self.NUM_CHANNELS)]
 
@@ -69,7 +70,7 @@ class CtrlPanel(QObject):
             tree.setHeaderHidden(True)
             tree.setParameters(self.params[i], showTop=False)
             self.params[i].setValue = self._setValue
-            self.params[i].sigTreeStateChanged.connect(self.cache_changes)
+            self.params[i].sigTreeStateChanged.connect(self.cacheChanges)
 
             for item in self.params[i].child("output", "control_method", "target").items:
                 setattr(item.widget, "_param", item.param)
@@ -98,6 +99,14 @@ class CtrlPanel(QObject):
         self.thermostat.output_update.connect(self.update_output)
         self.thermostat.postfilter_update.connect(self.update_postfilter)
         self.autotuners.autotune_state_changed.connect(self.update_pid_autotune)
+
+    @property
+    def cachedChanges(self):
+        return self._cachedChanges
+    
+    @property
+    def currentCurrent(self):
+        return self._currentCurrent
 
     def _setValue(self, value, blockSignal=None):
         """
@@ -128,12 +137,8 @@ class CtrlPanel(QObject):
     def change_params_title(self, channel, path, title):
         self.params[channel].child(*path).setOpts(title=title)
 
-    @property
-    def cachedChanges(self):
-        return self._cachedChanges
-
     @asyncSlot(object, object)
-    async def cache_changes(self, param, changes):
+    async def cacheChanges(self, param, changes):
         ch = param.channel
         for inner_param, change_type, data in changes: 
             if change_type != "value":
@@ -219,6 +224,7 @@ class CtrlPanel(QObject):
                 self.params[channel].child("output", "control_method").setValue(
                     "temperature_pid" if settings["pid_engaged"] else "constant_current"
                 )
+                self._currentCurrent[channel] = settings["i_set"]
                 self._handleCachedSettings(channel, settings["i_set"]*1000, ("output", "control_method", "i_set"))
                 if settings["temperature"] is not None:
                     self.params[channel].child("readings", "temperature").setValue(

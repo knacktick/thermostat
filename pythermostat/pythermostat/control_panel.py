@@ -6,6 +6,7 @@ import argparse
 import importlib.resources
 import signal
 import json
+from functools import partial
 from PyQt6 import QtWidgets, QtGui, uic
 from PyQt6.QtCore import Qt, pyqtSlot
 import qasync
@@ -71,6 +72,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._on_pid_autotune_state_changed
         )
 
+        self.lastCurrSetpoint = [0.0 for i in range(self.NUM_CHANNELS)]
+        self.apply_all_settings_btns = [None for i in range(self.NUM_CHANNELS)]
+
         # Handlers for disconnections
         async def autotune_disconnect():
             for ch in range(self.NUM_CHANNELS):
@@ -100,9 +104,26 @@ class MainWindow(QtWidgets.QMainWindow):
             get_ctrl_panel_config(args),
         )
 
-        self._ctrl_panel_view.sigCachedChangedSetting.connect(self.enableApplyAllSettingBtn)
-        self.apply_all_settings.clicked.connect(self.applyAllSettings)
-        self.apply_all_settings.setVisible(False)
+        for ch in range(self.NUM_CHANNELS):
+            vlch = f"_{ch+2}" if ch==0 else f"" 
+
+            palette = QtGui.QPalette() #TODO: dynamically change the paramter tree row's background based on if they are modified or not
+            brush = QtGui.QBrush(QtGui.QColor(246, 211, 45))
+            brush.setStyle(Qt.BrushStyle.SolidPattern)
+            palette.setBrush(QtGui.QPalette.ColorGroup.Active, QtGui.QPalette.ColorRole.Button, brush)
+            brush = QtGui.QBrush(QtGui.QColor(246, 211, 45))
+            brush.setStyle(Qt.BrushStyle.SolidPattern)
+            palette.setBrush(QtGui.QPalette.ColorGroup.Inactive, QtGui.QPalette.ColorRole.Button, brush)
+            brush = QtGui.QBrush(QtGui.QColor(246, 211, 45))
+            brush.setStyle(Qt.BrushStyle.SolidPattern)
+            palette.setBrush(QtGui.QPalette.ColorGroup.Disabled, QtGui.QPalette.ColorRole.Button, brush)
+
+            self.apply_all_settings_btns[ch] = QtWidgets.QPushButton(f"Apply All Changes {ch}", parent=getattr(self, f"ch{ch}_tab")) #what even is this bruh TT_TT
+            getattr(self, f"verticalLayout{vlch}").addWidget(self.apply_all_settings_btns[ch])
+            self.apply_all_settings_btns[ch].setPalette(palette)
+            self.apply_all_settings_btns[ch].setVisible(False)
+            self._ctrl_panel_view.sigCachedChangedSetting.connect(partial(self.enableApplyAllSettingBtn, ch))
+            self.apply_all_settings_btns[ch].clicked.connect(partial(self.applyAllSettings, ch))
 
         # Setting save menu
         self.tabWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -123,6 +144,9 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.connect_btn.setMenu(self.connection_details_menu)
 
+        self.emergency_stop_btn.clicked.connect(self.emergencyStop)
+        self.start_btn.clicked.connect(self.startBtnSlot)
+
         self._thermostat_settings_menu = ThermostatSettingsMenu(
             self._thermostat, self._info_box, self.style()
         )
@@ -141,16 +165,33 @@ class MainWindow(QtWidgets.QMainWindow):
             lambda: self._thermostat.set_update_s(self.report_refresh_spin.value())
         )
 
-    @pyqtSlot(bool)
-    def enableApplyAllSettingBtn(self):
-        self.apply_all_settings.setVisible(True)
+    @asyncSlot(bool)
+    async def emergencyStop(self):
+        for ch in range(self.NUM_CHANNELS):
+            self.lastCurrSetpoint[ch] = self._ctrl_panel_view.currentCurrent[ch]
+            await self._ctrl_panel_view.apply_setting(self._ctrl_panel_view.params[ch].child("output", "control_method", "i_set"), ch, 0.0, {'topic': 'output', 'field': 'i_set'})
+        self.emergency_stop_btn.setEnabled(False)
+        self.start_btn.setEnabled(True)
 
     @asyncSlot(bool)
-    async def applyAllSettings(self):
+    async def startBtnSlot(self):
+        for ch in range(self.NUM_CHANNELS):
+            await self._ctrl_panel_view.apply_setting(self._ctrl_panel_view.params[ch].child("output", "control_method", "i_set"), ch, self.lastCurrSetpoint[ch], {'topic': 'output', 'field': 'i_set'})
+        self.start_btn.setEnabled(False)
+        self.emergency_stop_btn.setEnabled(True)
+
+    @pyqtSlot(bool)
+    def enableApplyAllSettingBtn(self, btnch=0):
+        self.apply_all_settings_btns[btnch].setVisible(True)
+
+    @asyncSlot(bool)
+    async def applyAllSettings(self, btnch=0):
         self.cachedChanges = self._ctrl_panel_view.cachedChanges
         
         for param in self.cachedChanges:
             ch = self.cachedChanges[param][0]
+            if(ch != btnch):
+                continue
             data = self.cachedChanges[param][1]
             thermostat_param = self.cachedChanges[param][2]
             if param.opts.get("suffix", None) == "mA":
@@ -161,7 +202,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ctrl_panel_view.autotuners.set_params(param.opts["pid_autotune"], ch, param)
         
         self._ctrl_panel_view.flushCachedSetting()
-        self.apply_all_settings.setVisible(False)
+        self.apply_all_settings_btns[btnch].setVisible(False)
             
     
     def openSettingsContextMenu(self, pos):
@@ -200,6 +241,10 @@ class MainWindow(QtWidgets.QMainWindow):
             case ThermostatConnectionState.DISCONNECTED:
                 self.connect_btn.setText("Connect")
                 self.status_lbl.setText("Disconnected")
+
+        for ch in range(self.NUM_CHANNELS):
+            self.start_btn.setEnabled(state == ThermostatConnectionState.CONNECTED and self.lastCurrSetpoint[ch] == 0.0)
+            self.emergency_stop_btn.setEnabled(state == ThermostatConnectionState.CONNECTED and self.lastCurrSetpoint[ch] != 0.0)
 
     @pyqtSlot(int, PIDAutotuneState)
     def _on_pid_autotune_state_changed(self, _ch, _state):
