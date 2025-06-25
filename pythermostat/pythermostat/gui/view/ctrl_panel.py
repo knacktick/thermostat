@@ -228,21 +228,26 @@ class CtrlPanel(QObject):
         setting_param = self.params[ch].child(*path)
         isCachedSetting = self._checkIsInCachedChanges(name)
         isInSettingVisualUpdate = name in self._settingVisualUpdate
-        if not isCachedSetting and isInSettingVisualUpdate:
-            setting_param.setValue(data)
-            setting_param.setOpts(title=(setting_param.opts["title"])[0:-3])
-            for item in setting_param.items:
-                font = item.font(0);font.setBold(0);font.setUnderline(0)
-                item.setFont(0, font)
-            self._settingVisualUpdate.discard(name)
-        elif isCachedSetting and not isInSettingVisualUpdate:
-            setting_param.setOpts(title=setting_param.opts["title"] + " (*)")
-            for item in setting_param.items:
-                font = item.font(0);font.setBold(1);font.setUnderline(1)
-                item.setFont(0, font)
-            self._settingVisualUpdate.add(name)
-        elif not isCachedSetting and not isInSettingVisualUpdate:
-            setting_param.setValue(data)
+        match isCachedSetting, isInSettingVisualUpdate:
+            case True, False:
+                self._settingVisualUpdate.add(name)
+                setting_param.setOpts(title=setting_param.opts["title"] + " (*)")
+                for item in setting_param.items:
+                    font = item.font(0);font.setBold(True);font.setUnderline(True)
+                    item.setFont(0, font)
+            case True, _: 
+                for item in setting_param.items:
+                    item.setToolTip(1, f"Current value: {data}")
+            case False, True:
+                setting_param.setValue(data)
+                setting_param.setOpts(title=(setting_param.opts["title"])[0:-3])
+                for item in setting_param.items:
+                    font = item.font(0);font.setBold(False);font.setUnderline(False)
+                    item.setFont(0, font)
+                self._settingVisualUpdate.discard(name)
+            case False, False:
+                setting_param.setValue(data)
+
 
     @pyqtSlot(list)
     def update_pid(self, pid_settings):
