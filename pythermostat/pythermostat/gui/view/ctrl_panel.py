@@ -1,7 +1,8 @@
+from types import MethodType
 from functools import partial
 from PyQt6 import QtWidgets
 from PyQt6.QtGui import QAction
-from PyQt6.QtCore import pyqtSignal, QObject, QSignalBlocker, pyqtSlot
+from PyQt6.QtCore import pyqtSignal, QObject, QSignalBlocker, pyqtSlot, Qt
 import pyqtgraph.parametertree.parameterTypes as pTypes
 from pyqtgraph.parametertree import (
     Parameter,
@@ -12,74 +13,6 @@ from pyqtgraph.widgets.SpinBox import SpinBox
 from qasync import asyncSlot
 from pythermostat.autotune import PIDAutotuneState
 
-
-class CoolSpinBox(SpinBox):
-    def __init__(self, param):
-        super().__init__()
-        self._param = param
- 
-    def contextMenuEvent(self, ev):
-        self._stdMenu = QtWidgets.QLineEdit()
-        self._contextMenu = self._stdMenu.createStandardContextMenu()
-        self._contextMenu.addSeparator()
-        self._contextMenu.addAction(QAction("Set to measurement", self, triggered=self._setToMeasured))
-        self._contextMenu.popup(ev.globalPos())
- 
-    def _setToMeasured(self):
-        self.setValue(self._param.parent().parent().parent().child("readings", "temperature").value())
- 
- 
-class CoolFloatParameterItem(pTypes.NumericParameterItem):
-    def __init__(self, param, depth=0):
-        super().__init__(param, depth)
- 
-    def makeWidget(self):
-        opts = self.param.opts
-        t = opts['type']
-        defs = {
-            'value': 0, 'min': None, 'max': None,
-            'step': 1.0, 'dec': False,
-            'siPrefix': False, 'suffix': '', 'decimals': 3,
-        }
-        if t == 'int':
-            defs['int'] = True
-            defs['minStep'] = 1.0
-        for k in defs:
-            if k in opts:
-                defs[k] = opts[k]
-        if opts.get('limits') is not None:
-            defs['min'], defs['max'] = opts['limits']
-        w = CoolSpinBox(self.param)
-        w.setOpts(**defs)
-        w.sigChanged = w.sigValueChanged
-        w.sigChanging = w.sigValueChanging
-        return w
- 
-    # def contextMenuEvent(self, ev):
-    #     self.contextMenu = QtWidgets.QMenu() # Put in global name space to prevent garbage collection
-    #     self.contextMenu.addSeparator()
-    
-    #     self._asd = QAction("asd", self)
-    #     self.contextMenu.addAction(asd)        
-    #     self.contextMenu.popup(ev.globalPos())
- 
-    # def _asd(self):
-    #     print("clciked :3")
- 
-
-class CoolSimpleParameter(pTypes.SimpleParameter):
-    @property
-    def itemClass(self):
-        return {
-            'bool': pTypes.BoolParameterItem,
-            'int': pTypes.NumericParameterItem,
-            'float': pTypes.NumericParameterItem,
-            'cool_float': CoolFloatParameterItem,
-            'str': pTypes.StrParameterItem,
-        }[self.opts['type']]
-
-
-registerParameterItemType("cool_float", CoolFloatParameterItem, CoolSimpleParameter)
 
 class CtrlPanel(QObject):
 
@@ -119,11 +52,29 @@ class CtrlPanel(QObject):
         for i, param in enumerate(self.params):
             param.channel = i
 
+        def _setTargetToMeasured(self):
+            self.setValue(self._param.parent().parent().parent().child("readings", "temperature").value())
+
+        def _targetContextMenuEvent(self, ev):
+            self._stdMenu = QtWidgets.QLineEdit()
+            self._contextMenu = self._stdMenu.createStandardContextMenu()
+            self._contextMenu.addSeparator()
+            self._contextMenu.addAction(QAction("Step Up", self, triggered=self.stepUp))
+            self._contextMenu.addAction(QAction("Step Down", self, triggered=self.stepDown))
+            self._contextMenu.addSeparator()
+            self._contextMenu.addAction(QAction("Set To Measurement", self, triggered=self.setTargetToMeasured))
+            self._contextMenu.popup(ev.globalPos())
+
         for i, tree in enumerate(self.trees_ui):
             tree.setHeaderHidden(True)
             tree.setParameters(self.params[i], showTop=False)
             self.params[i].setValue = self._setValue
             self.params[i].sigTreeStateChanged.connect(self.cache_changes)
+
+            for item in self.params[i].child("output", "control_method", "target").items:
+                setattr(item.widget, "_param", item.param)
+                item.widget.setTargetToMeasured = MethodType(_setTargetToMeasured, item.widget)
+                item.widget.contextMenuEvent = MethodType(_targetContextMenuEvent, item.widget)
 
             self.params[i].child("pid", "pid_autotune", "run_pid").sigActivated.connect(
                 partial(self.pid_auto_tune_request, i)
@@ -173,7 +124,7 @@ class CtrlPanel(QObject):
                 self.sigValueChanged.connect(blockSignal)
 
         return self.opts["value"]
-
+    
     def change_params_title(self, channel, path, title):
         self.params[channel].child(*path).setOpts(title=title)
 
